@@ -24,11 +24,9 @@
 }
 
 body {
-  display: grid;
-  place-content: center;
-  height: 100vh;
+  min-height: 100vh;
   width: 100vw;
-  overflow: hidden;
+  overflow-x: hidden;
 }
 
 .flipbook {
@@ -48,6 +46,7 @@ body {
   font-weight: lighter;
   opacity: 0.7;
   font-size: 14px;
+  color: #000;
 }
 
 .flipbook .page {

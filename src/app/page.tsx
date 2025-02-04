@@ -1,8 +1,9 @@
 import Script from "next/script";
+import FirstPage from "../components/FirstPage";
 
 export default function Home() {
   return (
-    <div className="flex flex-col min-h-screen p-4">
+    <div className="flex flex-col min-h-screen p-4 w-full">
       <Script src="/scripts/jquery.js" strategy="beforeInteractive" />
       <Script src="/scripts/turn.js" strategy="beforeInteractive" />
       <Script id="turn-init">
@@ -12,7 +13,7 @@ export default function Home() {
           });
         `}
       </Script>
-      <header className="flex justify-between items-center mb-8">
+      <header className="flex justify-between items-center mb-8 w-full">
         <div className="flex items-center">
           <span className="text-2xl font-bold">⚡︎⚡︎⚡︎</span>
         </div>
@@ -25,30 +26,45 @@ export default function Home() {
           </button>
         </div>
       </header>
-      <div
-        className="flipbook"
-        style={{ display: "block", minHeight: "600px", width: "800px" }}
-      >
-        <div className="hard">Inazine</div>
-        <div className="hard">Welcome</div>
-        <div>
-          <h2 className="text-xl font-bold mb-4">Inazine is for:</h2>
-          <ol className="list-decimal list-inside mb-4 text-left">
-            <li>Introverts with overflowing sketchbooks,</li>
-            <li>Poets who collect subway ticket stubs,</li>
-            <li>Artists building secret museums in their notes.</li>
-          </ol>
+      <div className="flex justify-center w-9/12 mx-auto">
+        <div className="w-2/3">
+          <div className="p-4 w-full">
+            <p className="text-2xl font-bold mb-4">InaZine is:</p>
+
+            <p className="text-gray-500 mt-2">
+              Click top or bottom corner of the zine on the right to flip →
+            </p>
+          </div>
         </div>
-        <div>
-          <h2 className="text-xl font-bold mb-4">Community</h2>
-          <p className="mb-4">blahblahblah</p>
+        <div className="flex justify-end w-full">
+          <div
+            className="flipbook"
+            style={{ display: "block", minHeight: "600px", width: "800px" }}
+          >
+            <div className="hard flex flex-col">
+              <p className="font-bold">Inazine</p>
+              <small className="text-xs text-gray-500">
+                That&apos;s a great idea! Why don&apos;t you put it in a zine?
+              </small>
+              💡
+            </div>
+            <div className="">
+              <FirstPage />
+            </div>
+            <div>
+              <h2 className="font-bold">
+                &quot;Finally, a place where my scraps feel sacred&quot;
+              </h2>
+              <small>✴Enter Inazine Universe✴</small>
+            </div>
+            <div>
+              <h2 className="text-xl font-bold mb-4">Description</h2>
+              <p className="mb-8">People describe Inazine as </p>
+            </div>
+            <div className="hard"></div>
+            <div className="hard">Thank you for reading!</div>
+          </div>
         </div>
-        <div>
-          <h2 className="text-xl font-bold mb-4">Description</h2>
-          <p className="mb-8">People describe Inazine as </p>
-        </div>
-        <div className="hard"></div>
-        <div className="hard">Thank you for reading!</div>
       </div>
 
       {/* <PageContent /> */}
