@@ -1,5 +1,6 @@
 import Script from "next/script";
 import FirstPage from "../components/FirstPage";
+import Image from "next/image";
 
 export default function Home() {
   return (
@@ -58,10 +59,41 @@ export default function Home() {
               <small>✴Enter Inazine Universe✴</small>
             </div>
             <div>
-              <h2 className="text-xl font-bold mb-4">Description</h2>
-              <p className="mb-8">People describe Inazine as </p>
+              <Image
+                src="/images/p1.png"
+                alt="Inazine"
+                width={800}
+                height={600}
+                priority
+              />
             </div>
-            <div className="hard"></div>
+            <div>
+              <Image
+                src="/images/p2.png"
+                alt="Inazine"
+                width={800}
+                height={600}
+                priority
+              />
+            </div>
+            <div>
+              <Image
+                src="/images/p3.png"
+                alt="Inazine"
+                width={800}
+                height={600}
+                priority
+              />
+            </div>
+            <div>
+              <Image
+                src="/images/p4.png"
+                alt="Inazine"
+                width={800}
+                height={600}
+                priority
+              />
+            </div>
             <div className="hard">Thank you for reading!</div>
           </div>
         </div>
