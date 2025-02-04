@@ -12,6 +12,16 @@ export default {
         background: "var(--background)",
         foreground: "var(--foreground)",
       },
+      rotate: {
+        'y-90': 'rotateY(90deg)',
+        'y-0': 'rotateY(0deg)',
+      },
+      transitionDuration: {
+        '600': '600ms',
+      },
+      perspective: {
+        '1000': '1000px',
+      },
     },
   },
   plugins: [],
