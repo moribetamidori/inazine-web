@@ -40,7 +40,12 @@ export default function Home() {
         <div className="flex justify-end w-full">
           <div
             className="flipbook"
-            style={{ display: "block", minHeight: "600px", width: "800px" }}
+            style={{
+              display: "block",
+              minHeight: "800px",
+              width: "1200px",
+              position: "relative",
+            }}
           >
             <div className="hard flex flex-col">
               <p className="font-bold">Inazine</p>
@@ -58,40 +63,44 @@ export default function Home() {
               </h2>
               <small>✴Enter Inazine Universe✴</small>
             </div>
-            <div>
+            <div className="image-page">
               <Image
                 src="/images/p1.png"
                 alt="Inazine"
-                width={800}
-                height={600}
+                width={600}
+                height={800}
                 priority
+                style={{ border: "2px solid red" }}
               />
             </div>
             <div>
               <Image
                 src="/images/p2.png"
                 alt="Inazine"
-                width={800}
-                height={600}
+                width={600}
+                height={800}
                 priority
+                style={{ border: "2px solid red" }}
               />
             </div>
             <div>
               <Image
                 src="/images/p3.png"
                 alt="Inazine"
-                width={800}
-                height={600}
+                width={600}
+                height={800}
                 priority
+                style={{ border: "2px solid red" }}
               />
             </div>
             <div>
               <Image
                 src="/images/p4.png"
                 alt="Inazine"
-                width={800}
-                height={600}
+                width={600}
+                height={800}
                 priority
+                style={{ border: "2px solid red" }}
               />
             </div>
             <div className="hard">Thank you for reading!</div>

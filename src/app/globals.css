@@ -30,8 +30,11 @@ body {
 }
 
 .flipbook {
-  width: 1000px;
-  height: 600px;
+  width: 1200px;
+  height: 800px;
+  margin: 0 auto;
+  padding: 0;
+  border: 2px solid red;
 }
 
 .flipbook .hard {
@@ -55,14 +58,22 @@ body {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  gap: 10px;
   border: 1px solid rgba(0, 0, 0, 0.11);
+  overflow: hidden;
+}
+
+.flipbook .page.image-page {
+  padding: 0;
+  display: block;
 }
 
 .page img {
   width: 100%;
-  object-fit: cover;
-  margin: auto;
+  height: 100%;
+  object-fit: contain;
+  margin: 0;
+  padding: 0;
+  display: block;
 }
 
 .flipbook .page small {
