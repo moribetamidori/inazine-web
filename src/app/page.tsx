@@ -28,7 +28,7 @@ export default function Home() {
         </div>
       </header>
       <div className="flex justify-center w-9/12 mx-auto">
-        <div className="w-2/3">
+        <div>
           <div className="p-4 w-full">
             <p className="text-2xl font-bold mb-4">InaZine is:</p>
 
@@ -37,13 +37,14 @@ export default function Home() {
             </p>
           </div>
         </div>
-        <div className="flex justify-end w-full">
+        <div>
           <div
             className="flipbook"
             style={{
               display: "block",
-              minHeight: "800px",
-              width: "1200px",
+              width: "840px",
+              height: "560px",
+              maxWidth: "100%",
               position: "relative",
             }}
           >
