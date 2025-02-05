@@ -34,6 +34,9 @@ body {
   height: 800px;
   margin: 0 auto;
   padding: 0;
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 0.5s ease-in-out;
 }
 
 .flipbook .hard {

@@ -31,6 +31,7 @@ export default function Home() {
         {`
           $(document).ready(function() {
             $(".flipbook").turn();
+            $(".flipbook").css("visibility", "visible").css("opacity", 1);
           });
         `}
       </Script>
