@@ -1,8 +1,28 @@
+"use client";
+
 import Script from "next/script";
 import FirstPage from "../components/FirstPage";
 import Image from "next/image";
+import { useEffect, useRef, useState } from "react";
 
 export default function Home() {
+  const flipbookRef = useRef<HTMLDivElement>(null);
+  const [flipbookHeight, setFlipbookHeight] = useState<number>(560);
+
+  useEffect(() => {
+    const updateHeight = () => {
+      if (flipbookRef.current) {
+        const width = flipbookRef.current.offsetWidth;
+        const height = width * 0.667; // 2/3 ratio
+        setFlipbookHeight(Math.min(height, 560)); // Cap at 560px
+      }
+    };
+
+    updateHeight();
+    window.addEventListener("resize", updateHeight);
+    return () => window.removeEventListener("resize", updateHeight);
+  }, []);
+
   return (
     <div className="flex flex-col min-h-screen p-4 w-full">
       <Script src="/scripts/jquery.js" strategy="beforeInteractive" />
@@ -27,30 +47,33 @@ export default function Home() {
           </button>
         </div>
       </header>
-      <div className="flex justify-center w-9/12 mx-auto">
-        <div>
+
+      <div className="flex flex-col lg:flex-row lg:justify-center lg:w-9/12 mx-auto">
+        <div className="mb-8 lg:mb-0">
           <div className="p-4 w-full">
             <p className="text-2xl font-bold mb-4">InaZine is:</p>
-
             <p className="text-gray-500 mt-2">
-              Click top or bottom corner of the zine on the right to flip →
+              Click top or bottom corner of the zine to flip{" "}
+              <span className="lg:hidden">↓</span>
+              <span className="hidden lg:inline">→</span>
             </p>
           </div>
         </div>
-        <div>
+        <div className="w-full flex justify-center">
           <div
+            ref={flipbookRef}
             className="flipbook"
             style={{
               display: "block",
-              width: "840px",
-              height: "560px",
-              maxWidth: "100%",
+              width: "100%",
+              maxWidth: "840px",
+              height: `${flipbookHeight}px`,
               position: "relative",
             }}
           >
             <div className="hard flex flex-col">
               <p className="font-bold">Inazine</p>
-              <small className="text-xs text-gray-500">
+              <small className="text-xs text-gray-500 text-center">
                 That&apos;s a great idea! Why don&apos;t you put it in a zine?
               </small>
               💡
@@ -58,7 +81,7 @@ export default function Home() {
             <div className="">
               <FirstPage />
             </div>
-            <div>
+            <div className="text-center">
               <h2 className="font-bold">
                 &quot;Finally, a place where my scraps feel sacred&quot;
               </h2>

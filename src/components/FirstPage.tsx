@@ -1,7 +1,7 @@
 export default function FirstPage() {
   return (
     <div className="">
-      <div className="absolute top-2 left-2 ">
+      <div className="absolute top-2 left-2 overflow-y-auto max-h-[calc(100vh-1rem)]">
         <p className="font-bold">The origin of Inazine</p>
         <p className="font-normal">
           Inspired by the spark, lightning, and thunder talks that took place in
