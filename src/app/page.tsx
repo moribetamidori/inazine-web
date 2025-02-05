@@ -71,7 +71,6 @@ export default function Home() {
                 width={600}
                 height={800}
                 priority
-                style={{ border: "2px solid red" }}
               />
             </div>
             <div>
@@ -81,7 +80,6 @@ export default function Home() {
                 width={600}
                 height={800}
                 priority
-                style={{ border: "2px solid red" }}
               />
             </div>
             <div>
@@ -91,7 +89,6 @@ export default function Home() {
                 width={600}
                 height={800}
                 priority
-                style={{ border: "2px solid red" }}
               />
             </div>
             <div>
@@ -101,7 +98,6 @@ export default function Home() {
                 width={600}
                 height={800}
                 priority
-                style={{ border: "2px solid red" }}
               />
             </div>
             <div className="hard">Thank you for reading!</div>
