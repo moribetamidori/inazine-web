@@ -51,11 +51,6 @@ export default function Home() {
                   Log in
                 </button>
               </a>
-              <a href="/login">
-                <button className="ml-4 px-2 py-1 bg-gray-100 rounded hover:bg-gray-200 transition-colors duration-200">
-                  Sign up
-                </button>
-              </a>
             </>
           )}
         </div>
