@@ -2,22 +2,20 @@
 
 import { useAuth } from "@/contexts/AuthContext";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import UserMenu from "@/components/UserMenu";
 
 export default function HomePage() {
   const { user } = useAuth();
-  const router = useRouter();
 
   useEffect(() => {
     if (!user) {
-      router.push("/");
+      window.location.href = "/";
     }
-  }, [user, router]);
+  }, [user]);
 
   return (
     <>
-
       <div className="flex flex-col min-h-screen">
         <header className="flex justify-between items-center p-4 border-b">
           <div className="flex items-center gap-4">
@@ -33,7 +31,7 @@ export default function HomePage() {
           <div className="flex items-center gap-4">
             <button className="px-4 py-2">New channel +</button>
             <span>0</span>
-            <span>{user?.email?.charAt(0).toUpperCase()}</span>
+            <UserMenu />
           </div>
         </header>
 
