@@ -1,6 +1,7 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, RefObject } from "react";
 import { motion } from "framer-motion";
 import Draggable from "react-draggable";
+import type { DraggableEvent, DraggableData } from "react-draggable";
 
 interface ZineCanvasProps {
   width?: number;
@@ -29,16 +30,18 @@ function DraggableElement({
   onDelete: (id: string) => void;
   onDragStop: (id: string, x: number, y: number) => void;
 }) {
-  const nodeRef = useRef(null);
+  const nodeRef = useRef<HTMLDivElement>(null);
+
+  const handleDragStop = (e: DraggableEvent, data: DraggableData) => {
+    onDragStop(element.id, data.x, data.y);
+  };
 
   return (
     <Draggable
-      nodeRef={nodeRef}
+      nodeRef={nodeRef as RefObject<HTMLElement>}
       position={{ x: element.position.x, y: element.position.y }}
       scale={scale}
-      onStop={(e, data) => {
-        onDragStop(element.id, data.x, data.y);
-      }}
+      onStop={handleDragStop}
     >
       <div ref={nodeRef} className="cursor-grab group absolute">
         {element.type === "text" ? (
