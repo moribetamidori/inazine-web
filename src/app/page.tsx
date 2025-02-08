@@ -4,10 +4,12 @@ import Script from "next/script";
 import FirstPage from "../components/FirstPage";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function Home() {
   const flipbookRef = useRef<HTMLDivElement>(null);
   const [flipbookHeight, setFlipbookHeight] = useState<number>(560);
+  const { user } = useAuth();
 
   useEffect(() => {
     const updateHeight = () => {
@@ -40,12 +42,22 @@ export default function Home() {
           <span className="text-2xl font-bold">⚡︎⚡︎⚡︎</span>
         </div>
         <div>
-          <button className="px-2 py-1 bg-gray-100 rounded hover:bg-gray-200 transition-colors duration-200">
-            Log in
-          </button>
-          <button className="ml-4 px-2 py-1 bg-gray-100 rounded hover:bg-gray-200 transition-colors duration-200">
-            Sign up
-          </button>
+          {user ? (
+            <span className="text-gray-700">{user.email}</span>
+          ) : (
+            <>
+              <a href="/login">
+                <button className="px-2 py-1 bg-gray-100 rounded hover:bg-gray-200 transition-colors duration-200">
+                  Log in
+                </button>
+              </a>
+              <a href="/login">
+                <button className="ml-4 px-2 py-1 bg-gray-100 rounded hover:bg-gray-200 transition-colors duration-200">
+                  Sign up
+                </button>
+              </a>
+            </>
+          )}
         </div>
       </header>
 
