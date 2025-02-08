@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
+import Script from "next/script";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -28,6 +29,18 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <Script src="/scripts/jquery.js" strategy="beforeInteractive" />
+        <Script src="/scripts/turn.js" strategy="beforeInteractive" />
+        <Script id="turn-init" strategy="afterInteractive">
+          {`
+            $(document).ready(function() {
+              if ($(".flipbook").length) {
+                $(".flipbook").turn();
+                $(".flipbook").css("visibility", "visible").css("opacity", 1);
+              }
+            });
+          `}
+        </Script>
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>

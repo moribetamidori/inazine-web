@@ -1,15 +1,23 @@
 "use client";
 
-import Script from "next/script";
 import FirstPage from "../components/FirstPage";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function Home() {
   const flipbookRef = useRef<HTMLDivElement>(null);
   const [flipbookHeight, setFlipbookHeight] = useState<number>(560);
   const { user } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (user) {
+      router.push("/home");
+    }
+  }, [user, router]);
 
   useEffect(() => {
     const updateHeight = () => {
@@ -27,21 +35,13 @@ export default function Home() {
 
   return (
     <div className="flex flex-col min-h-screen p-4 w-full">
-      <Script src="/scripts/jquery.js" strategy="beforeInteractive" />
-      <Script src="/scripts/turn.js" strategy="beforeInteractive" />
-      <Script id="turn-init">
-        {`
-          $(document).ready(function() {
-            $(".flipbook").turn();
-            $(".flipbook").css("visibility", "visible").css("opacity", 1);
-          });
-        `}
-      </Script>
       <header className="flex justify-between items-center mb-8 w-full">
-        <div className="flex items-center">
-          <span className="text-2xl font-bold">⚡︎⚡︎⚡︎</span>
-        </div>
-        <div>
+        <Link href="/">
+          <div className="flex items-center">
+            <span className="text-2xl font-bold">⚡︎⚡︎⚡︎</span>
+          </div>
+        </Link>
+        <div className="flex items-center gap-4">
           {user ? (
             <span className="text-gray-700">{user.email}</span>
           ) : (
