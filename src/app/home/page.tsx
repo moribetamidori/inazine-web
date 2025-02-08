@@ -2,17 +2,51 @@
 
 import { useAuth } from "@/contexts/AuthContext";
 import Link from "next/link";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import UserMenu from "@/components/UserMenu";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+
 
 export default function HomePage() {
   const { user } = useAuth();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const router = useRouter();
+  const supabase = createClient();
 
   useEffect(() => {
     if (!user) {
       window.location.href = "/";
     }
   }, [user]);
+
+  const handleCreateZine = async () => {
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user?.id) {
+        throw new Error("User not found");
+      }
+      const { data: zine, error } = await supabase
+        .from("zines")
+        .insert({
+          title,
+          description,
+          user_id: user.id,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      router.push(`/${user?.id}/${zine.id}`);
+    } catch (error) {
+      console.error("Error creating zine:", error);
+    }
+  };
 
   return (
     <>
@@ -29,8 +63,13 @@ export default function HomePage() {
             />
           </div>
           <div className="flex items-center gap-4">
-            <button className="px-4 py-2">New channel +</button>
-            <span>0</span>
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="px-4 py-1 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+            >
+              New zine +
+            </button>
+            {/* <span>0</span> */}
             <UserMenu />
           </div>
         </header>
@@ -77,6 +116,57 @@ export default function HomePage() {
               />
             </div>
           </div>
+
+          {isModalOpen && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-lg p-6 w-full max-w-md">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl font-semibold">New channel</h2>
+                  <button
+                    onClick={() => setIsModalOpen(false)}
+                    className="text-gray-500 hover:text-gray-700"
+                  >
+                    ×
+                  </button>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1">
+                      Title
+                    </label>
+                    <input
+                      type="text"
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      placeholder="Type channel name"
+                      className="w-full px-3 py-2 border rounded-md"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1">
+                      Description
+                    </label>
+                    <textarea
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      placeholder="Describe your channel here"
+                      className="w-full px-3 py-2 border rounded-md"
+                      rows={4}
+                    />
+                  </div>
+
+                  <button
+                    onClick={handleCreateZine}
+                    className="w-full px-4 py-2 bg-black text-white rounded-md hover:bg-gray-800"
+                  >
+                    Create channel
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </main>
       </div>
     </>
