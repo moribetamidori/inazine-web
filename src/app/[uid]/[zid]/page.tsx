@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { useParams } from "next/navigation";
 import AuthenticatedLayout from "@/components/AuthenticatedLayout";
+import ZineCanvas from "@/components/ZineCanvas";
 
 interface Zine {
   id: string;
@@ -43,16 +44,14 @@ export default function ZinePage() {
   return (
     <AuthenticatedLayout>
       <div className="min-h-screen bg-gray-100">
-        <div className="max-w-screen-xl mx-auto p-4">
-          <div className="bg-white w-[600px] h-[800px] mx-auto shadow-lg">
-            {/* This will be your canvas/editor area */}
-            {zine && (
-              <div className="p-4">
-                <h1 className="text-2xl font-bold">{zine.title}</h1>
-                <p className="text-gray-600">{zine.description}</p>
-              </div>
-            )}
-          </div>
+        <div className="max-w-screen-2xl mx-auto p-4">
+          {zine && (
+            <div className="mb-4">
+              <h1 className="text-2xl font-bold">{zine.title}</h1>
+              <p className="text-gray-600">{zine.description}</p>
+            </div>
+          )}
+          <ZineCanvas />
         </div>
       </div>
     </AuthenticatedLayout>
