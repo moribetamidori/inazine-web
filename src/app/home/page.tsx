@@ -7,7 +7,6 @@ import UserMenu from "@/components/UserMenu";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
-
 export default function HomePage() {
   const { user } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);

@@ -46,11 +46,11 @@ export default function Home() {
             <span className="text-gray-700">{user.email}</span>
           ) : (
             <>
-              <a href="/login">
+              <Link href="/login">
                 <button className="px-2 py-1 bg-gray-100 rounded hover:bg-gray-200 transition-colors duration-200">
                   Log in
                 </button>
-              </a>
+              </Link>
             </>
           )}
         </div>
