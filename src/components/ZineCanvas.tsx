@@ -1,11 +1,12 @@
 import { useState, useRef, useEffect, RefObject } from "react";
-import { motion } from "framer-motion";
 import Draggable from "react-draggable";
 import type { DraggableEvent, DraggableData } from "react-draggable";
-
+import type { Zine } from "@/types/zine";
+import Image from "next/image";
 interface ZineCanvasProps {
   width?: number;
   height?: number;
+  zine?: Zine;
 }
 
 interface Element {
@@ -31,6 +32,31 @@ function DraggableElement({
   onDragStop: (id: string, x: number, y: number) => void;
 }) {
   const nodeRef = useRef<HTMLDivElement>(null);
+  const [imageDimensions, setImageDimensions] = useState({
+    width: 0,
+    height: 0,
+  });
+
+  useEffect(() => {
+    if (element.type === "image") {
+      const img = new window.Image();
+      img.src = element.content;
+      img.onload = () => {
+        // Scale down large images while maintaining aspect ratio
+        const maxSize = 300;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxSize || height > maxSize) {
+          const ratio = Math.min(maxSize / width, maxSize / height);
+          width *= ratio;
+          height *= ratio;
+        }
+
+        setImageDimensions({ width, height });
+      };
+    }
+  }, [element]);
 
   const handleDragStop = (e: DraggableEvent, data: DraggableData) => {
     onDragStop(element.id, data.x, data.y);
@@ -50,6 +76,8 @@ function DraggableElement({
             suppressContentEditableWarning
             className="min-w-[100px] min-h-[20px] outline-none hover:border hover:border-dashed hover:border-gray-300"
             onDoubleClick={(e) => {
+              e.currentTarget.setAttribute("contentEditable", "true");
+              e.currentTarget.focus();
               e.currentTarget.classList.add(
                 "border",
                 "border-solid",
@@ -57,11 +85,17 @@ function DraggableElement({
               );
             }}
             onBlur={(e) => {
-              e.currentTarget.classList.remove(
-                "border",
-                "border-solid",
-                "border-blue-500"
-              );
+              const content = e.currentTarget.textContent || "";
+              if (content.trim() === "") {
+                onDelete(element.id);
+              } else {
+                e.currentTarget.setAttribute("contentEditable", "false");
+                e.currentTarget.classList.remove(
+                  "border",
+                  "border-solid",
+                  "border-blue-500"
+                );
+              }
             }}
           >
             {element.content}
@@ -76,12 +110,16 @@ function DraggableElement({
                 Delete
               </button>
             </div>
-            <img
-              src={element.content}
-              alt="User uploaded"
-              className="max-w-[300px] max-h-[300px] object-contain"
-              style={{ pointerEvents: "none" }}
-            />
+            {imageDimensions.width > 0 && (
+              <Image
+                src={element.content}
+                alt="User uploaded"
+                width={imageDimensions.width}
+                height={imageDimensions.height}
+                className="object-contain"
+                style={{ pointerEvents: "none" }}
+              />
+            )}
           </div>
         )}
       </div>
@@ -92,12 +130,11 @@ function DraggableElement({
 export default function ZineCanvas({
   width = 900,
   height = 1200,
+  zine,
 }: ZineCanvasProps) {
   const [elements, setElements] = useState<Element[]>([]);
   const [scale, setScale] = useState(0.5);
   const containerRef = useRef<HTMLDivElement>(null);
-  const canvasRef = useRef<HTMLDivElement>(null);
-
   // Handle zoom with trackpad/mouse wheel
   const handleWheel = (e: WheelEvent) => {
     if (e.ctrlKey || e.metaKey) {
@@ -171,52 +208,57 @@ export default function ZineCanvas({
   };
 
   return (
-    <div className="relative overflow-hidden bg-gray-50 rounded-lg">
-      <div className="sticky top-0 z-10 bg-white border-b p-2 flex gap-2">
-        <button
-          onClick={addText}
-          className="px-3 py-1 bg-black text-white rounded hover:bg-gray-800"
-        >
-          Add Text
-        </button>
-        <button
-          onClick={addImage}
-          className="px-3 py-1 bg-black text-white rounded hover:bg-gray-800"
-        >
-          Add Image
-        </button>
-        <span className="ml-4 text-sm text-gray-500">
-          Scale: {Math.round(scale * 100)}%
-        </span>
+    <div className="relative rounded-lg h-screen">
+      <div className="flex justify-between bg-white">
+        <div className="p-2">
+          <h1 className="text-2xl font-bold">{zine?.title}</h1>
+        </div>
+        <div className=" z-10 bg-white border-b p-2 flex gap-2">
+          <button
+            onClick={addText}
+            className="px-3 py-1 bg-black text-white rounded hover:bg-gray-800"
+          >
+            Add Text
+          </button>
+          <button
+            onClick={addImage}
+            className="px-3 py-1 bg-black text-white rounded hover:bg-gray-800"
+          >
+            Add Image
+          </button>
+          <span className="ml-4 text-gray-500 mt-1">
+            Scale: {Math.round(scale * 100)}%
+          </span>
+        </div>
       </div>
-
       <div
         ref={containerRef}
-        className="relative overflow-auto flex items-center justify-center"
-        style={{ height: "calc(100vh - 100px)", paddingTop: "100px" }}
+        className="relative bg-black h-[90vh] overflow-auto"
       >
-        <motion.div
-          ref={canvasRef}
-          className="relative bg-white shadow-lg"
-          style={{
-            width,
-            height,
-            scale,
-            transformOrigin: "center",
-          }}
-        >
-          {elements.map((element) => (
-            <DraggableElement
-              key={element.id}
-              element={element}
-              scale={scale}
-              onDelete={(id) =>
-                setElements(elements.filter((el) => el.id !== id))
-              }
-              onDragStop={handleDragStop}
-            />
-          ))}
-        </motion.div>
+        <div className="min-h-full min-w-full flex items-center justify-center p-8">
+          <div
+            className="bg-white shadow-lg"
+            style={{
+              width,
+              height,
+              transform: `scale(${scale})`,
+              transformOrigin: "top",
+              margin: `0px ${Math.max(((scale - 1) * width) / 2, 0)}px`,
+            }}
+          >
+            {elements.map((element) => (
+              <DraggableElement
+                key={element.id}
+                element={element}
+                scale={scale}
+                onDelete={(id) =>
+                  setElements(elements.filter((el) => el.id !== id))
+                }
+                onDragStop={handleDragStop}
+              />
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );

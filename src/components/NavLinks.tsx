@@ -13,7 +13,7 @@ export default function NavLinks() {
   const isFeed = pathname === "/home";
 
   return (
-    <div className="mb-8">
+    <div className="mb-2">
       <h1 className="text-xl">
         <Link href="/home" className={isFeed ? "font-bold" : ""}>
           Inazine / Feed

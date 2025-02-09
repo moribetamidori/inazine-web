@@ -1,6 +1,7 @@
 import { useAuth } from "@/contexts/AuthContext";
 import Link from "next/link";
 import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import UserMenu from "./UserMenu";
 import NavLinks from "./NavLinks";
 
@@ -9,13 +10,18 @@ export default function AuthenticatedLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+  const router = useRouter();
 
   useEffect(() => {
-    if (!user) {
-      window.location.href = "/";
+    if (!loading && !user) {
+      router.push("/");
     }
-  }, [user]);
+  }, [user, loading, router]);
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
 
   if (!user) return null;
 

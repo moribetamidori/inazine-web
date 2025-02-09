@@ -16,6 +16,8 @@
     "@react-three/fiber": "^8.17.14",
     "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.48.1",
+    "@tiptap/react": "^2.11.5",
+    "@tiptap/starter-kit": "^2.11.5",
     "framer-motion": "^12.0.11",
     "jotai": "^2.11.3",
     "maath": "^0.10.8",
@@ -25,6 +27,7 @@
     "react-dom": "^19.0.0",
     "react-draggable": "^4.4.6",
     "react-pageflip": "^2.0.3",
+    "react-zoom-pan-pinch": "^3.7.0",
     "three": "^0.173.0"
   },
   "devDependencies": {

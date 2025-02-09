@@ -5,15 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { useParams } from "next/navigation";
 import AuthenticatedLayout from "@/components/AuthenticatedLayout";
 import ZineCanvas from "@/components/ZineCanvas";
-
-interface Zine {
-  id: string;
-  title: string;
-  description: string | null;
-  user_id: string;
-  created_at: string;
-  updated_at: string;
-}
+import type { Zine } from "@/types/zine";
 
 export default function ZinePage() {
   const params = useParams();
@@ -43,15 +35,9 @@ export default function ZinePage() {
 
   return (
     <AuthenticatedLayout>
-      <div className="min-h-screen bg-gray-100">
-        <div className="max-w-screen-2xl mx-auto p-4">
-          {zine && (
-            <div className="mb-4">
-              <h1 className="text-2xl font-bold">{zine.title}</h1>
-              <p className="text-gray-600">{zine.description}</p>
-            </div>
-          )}
-          <ZineCanvas />
+      <div className="min-h-screen">
+        <div className="max-w-screen-2xl mx-auto">
+          {zine && <ZineCanvas zine={zine} />}
         </div>
       </div>
     </AuthenticatedLayout>
