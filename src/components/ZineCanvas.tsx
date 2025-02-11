@@ -3,6 +3,12 @@ import Draggable from "react-draggable";
 import type { DraggableEvent, DraggableData } from "react-draggable";
 import type { Zine } from "@/types/zine";
 import Image from "next/image";
+import { EditorContent, useEditor } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import { TextEditorBubbleMenu } from "./TextEditorBubbleMenu";
+import { FontSize } from "@tiptap/extension-font-size";
+import TextStyle from "@tiptap/extension-text-style";
+
 interface ZineCanvasProps {
   width?: number;
   height?: number;
@@ -25,17 +31,36 @@ function DraggableElement({
   scale,
   onDelete,
   onDragStop,
+  onUpdateContent,
 }: {
   element: Element;
   scale: number;
   onDelete: (id: string) => void;
   onDragStop: (id: string, x: number, y: number) => void;
+  onUpdateContent: (id: string, content: string) => void;
 }) {
   const nodeRef = useRef<HTMLDivElement>(null);
+  const [isEditing, setIsEditing] = useState(false);
   const [imageDimensions, setImageDimensions] = useState({
     width: 0,
     height: 0,
   });
+
+  const editor = useEditor({
+    extensions: [StarterKit, TextStyle, FontSize.configure()],
+    content: element.content,
+    editable: isEditing,
+    onBlur: ({ editor }) => {
+      setIsEditing(false);
+      onUpdateContent(element.id, editor.getHTML());
+    },
+  });
+
+  useEffect(() => {
+    if (editor) {
+      editor.setEditable(isEditing);
+    }
+  }, [isEditing, editor]);
 
   useEffect(() => {
     if (element.type === "image") {
@@ -62,43 +87,44 @@ function DraggableElement({
     onDragStop(element.id, data.x, data.y);
   };
 
+  const handleDoubleClick = () => {
+    if (element.type === "text") {
+      setIsEditing(true);
+    }
+  };
+
   return (
     <Draggable
       nodeRef={nodeRef as RefObject<HTMLElement>}
       position={{ x: element.position.x, y: element.position.y }}
       scale={scale}
       onStop={handleDragStop}
+      disabled={isEditing}
     >
-      <div ref={nodeRef} className="cursor-grab group absolute">
+      <div
+        ref={nodeRef}
+        className={`absolute ${
+          isEditing ? "cursor-text" : "cursor-grab group"
+        }`}
+      >
         {element.type === "text" ? (
-          <div
-            contentEditable
-            suppressContentEditableWarning
-            className="min-w-[100px] min-h-[20px] outline-none hover:border hover:border-dashed hover:border-gray-300"
-            onDoubleClick={(e) => {
-              e.currentTarget.setAttribute("contentEditable", "true");
-              e.currentTarget.focus();
-              e.currentTarget.classList.add(
-                "border",
-                "border-solid",
-                "border-blue-500"
-              );
-            }}
-            onBlur={(e) => {
-              const content = e.currentTarget.textContent || "";
-              if (content.trim() === "") {
-                onDelete(element.id);
-              } else {
-                e.currentTarget.setAttribute("contentEditable", "false");
-                e.currentTarget.classList.remove(
-                  "border",
-                  "border-solid",
-                  "border-blue-500"
-                );
-              }
-            }}
-          >
-            {element.content}
+          <div className="relative">
+            <div className="absolute -top-8 left-0 hidden group-hover:flex gap-1 bg-white shadow-md rounded px-2 py-1 z-10">
+              <button
+                onClick={() => onDelete(element.id)}
+                className="text-red-500 hover:text-red-700"
+              >
+                Delete
+              </button>
+            </div>
+
+            <div
+              className="min-w-[100px] p-2 relative"
+              onDoubleClick={handleDoubleClick}
+            >
+              <EditorContent editor={editor} />
+              {editor && <TextEditorBubbleMenu editor={editor} />}
+            </div>
           </div>
         ) : (
           <div className="relative">
@@ -135,6 +161,7 @@ export default function ZineCanvas({
   const [elements, setElements] = useState<Element[]>([]);
   const [scale, setScale] = useState(0.5);
   const containerRef = useRef<HTMLDivElement>(null);
+
   // Handle zoom with trackpad/mouse wheel
   const handleWheel = (e: WheelEvent) => {
     if (e.ctrlKey || e.metaKey) {
@@ -213,7 +240,7 @@ export default function ZineCanvas({
         <div className="p-2">
           <h1 className="text-2xl font-bold">{zine?.title}</h1>
         </div>
-        <div className=" z-10 bg-white border-b p-2 flex gap-2">
+        <div className="z-10 bg-white border-b p-2 flex gap-2">
           <button
             onClick={addText}
             className="px-3 py-1 bg-black text-white rounded hover:bg-gray-800"
@@ -233,7 +260,7 @@ export default function ZineCanvas({
       </div>
       <div
         ref={containerRef}
-        className="relative bg-black h-[90vh] overflow-auto"
+        className="relative bg-gray-50 h-[90vh] overflow-auto"
       >
         <div className="min-h-full min-w-full flex items-center justify-center p-8">
           <div
@@ -251,10 +278,17 @@ export default function ZineCanvas({
                 key={element.id}
                 element={element}
                 scale={scale}
-                onDelete={(id) =>
-                  setElements(elements.filter((el) => el.id !== id))
-                }
+                onDelete={(id) => {
+                  setElements(elements.filter((el) => el.id !== id));
+                }}
                 onDragStop={handleDragStop}
+                onUpdateContent={(id, content) =>
+                  setElements(
+                    elements.map((el) =>
+                      el.id === id ? { ...el, content } : el
+                    )
+                  )
+                }
               />
             ))}
           </div>
