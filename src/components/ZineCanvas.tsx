@@ -18,6 +18,7 @@ interface ZineCanvasProps {
 
 interface Element {
   id: string;
+  pageId: string;
   type: "text" | "image";
   content: string;
   position: {
@@ -30,6 +31,12 @@ interface Element {
   };
   scale: number;
   zIndex: number;
+}
+
+interface Page {
+  id: string;
+  zineId: string;
+  elements: Element[];
 }
 
 function DraggableElement({
@@ -316,7 +323,14 @@ export default function ZineCanvas({
   height = 1200,
   zine,
 }: ZineCanvasProps) {
-  const [elements, setElements] = useState<Element[]>([]);
+  const [pages, setPages] = useState<Page[]>([
+    {
+      id: "1",
+      zineId: zine?.id || "",
+      elements: [],
+    },
+  ]);
+  const [currentPage, setCurrentPage] = useState(0);
   const [scale, setScale] = useState(0.5);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -347,13 +361,20 @@ export default function ZineCanvas({
   const addText = () => {
     const newElement: Element = {
       id: `text-${Date.now()}`,
+      pageId: pages[currentPage].id,
       type: "text",
       content: "Double click to edit",
       position: { x: width / 2 - 50, y: height / 2 - 10 },
       scale: 1,
-      zIndex: elements.length + 1,
+      zIndex: pages[currentPage].elements.length + 1,
     };
-    setElements([...elements, newElement]);
+    setPages(
+      pages.map((page, index) =>
+        index === currentPage
+          ? { ...page, elements: [...page.elements, newElement] }
+          : page
+      )
+    );
   };
 
   const addImage = async () => {
@@ -367,13 +388,20 @@ export default function ZineCanvas({
         reader.onload = (e) => {
           const newElement: Element = {
             id: `image-${Date.now()}`,
+            pageId: pages[currentPage].id,
             type: "image",
             content: e.target?.result as string,
             position: { x: width / 2 - 100, y: height / 2 - 100 },
             scale: 1,
-            zIndex: elements.length + 1,
+            zIndex: pages[currentPage].elements.length + 1,
           };
-          setElements([...elements, newElement]);
+          setPages(
+            pages.map((page, index) =>
+              index === currentPage
+                ? { ...page, elements: [...page.elements, newElement] }
+                : page
+            )
+          );
         };
         reader.readAsDataURL(file);
       }
@@ -381,17 +409,30 @@ export default function ZineCanvas({
     input.click();
   };
 
+  const addNewPage = () => {
+    setPages([
+      ...pages,
+      {
+        id: Date.now().toString(),
+        zineId: zine?.id || "",
+        elements: [],
+      },
+    ]);
+    setCurrentPage(pages.length);
+  };
+
   const handleDragStop = (id: string, x: number, y: number) => {
-    setElements((elements) =>
-      elements.map((el) => {
-        if (el.id === id) {
-          return {
-            ...el,
-            position: { x, y },
-          };
-        }
-        return el;
-      })
+    setPages(
+      pages.map((page, index) =>
+        index === currentPage
+          ? {
+              ...page,
+              elements: page.elements.map((el) =>
+                el.id === id ? { ...el, position: { x, y } } : el
+              ),
+            }
+          : page
+      )
     );
   };
 
@@ -402,31 +443,36 @@ export default function ZineCanvas({
     x: number,
     y: number
   ) => {
-    setElements((elements) =>
-      elements.map((el) => {
-        if (el.id === id) {
-          return {
-            ...el,
-            dimensions: { width, height },
-            position: { x, y },
-          };
-        }
-        return el;
-      })
+    setPages(
+      pages.map((page, index) =>
+        index === currentPage
+          ? {
+              ...page,
+              elements: page.elements.map((el) =>
+                el.id === id
+                  ? { ...el, dimensions: { width, height }, position: { x, y } }
+                  : el
+              ),
+            }
+          : page
+      )
     );
   };
 
   const handleMoveLayer = (id: string, direction: "up" | "down") => {
-    setElements((prevElements) => {
-      const elementIndex = prevElements.findIndex((el) => el.id === id);
+    setPages((prevPages) => {
+      const elementIndex = prevPages[currentPage].elements.findIndex(
+        (el) => el.id === id
+      );
       if (
-        (direction === "up" && elementIndex === prevElements.length - 1) ||
+        (direction === "up" &&
+          elementIndex === prevPages[currentPage].elements.length - 1) ||
         (direction === "down" && elementIndex === 0)
       ) {
-        return prevElements;
+        return prevPages;
       }
 
-      const newElements = [...prevElements];
+      const newElements = [...prevPages[currentPage].elements];
       const element = newElements[elementIndex];
       const swapIndex =
         direction === "up" ? elementIndex + 1 : elementIndex - 1;
@@ -441,7 +487,9 @@ export default function ZineCanvas({
       newElements[elementIndex] = swapElement;
       newElements[swapIndex] = element;
 
-      return newElements;
+      return prevPages.map((page, index) =>
+        index === currentPage ? { ...page, elements: newElements } : page
+      );
     });
   };
 
@@ -450,6 +498,27 @@ export default function ZineCanvas({
       <div className="flex justify-between bg-white">
         <div className="p-2">
           <h1 className="text-2xl font-bold">{zine?.title}</h1>
+        </div>
+        <div className="flex gap-4 p-2">
+          {pages.map((_, index) => (
+            <button
+              key={index}
+              onClick={() => setCurrentPage(index)}
+              className={`px-4 py-2 rounded ${
+                currentPage === index
+                  ? "bg-black text-white"
+                  : "bg-gray-200 hover:bg-gray-300"
+              }`}
+            >
+              Page {index + 1}
+            </button>
+          ))}
+          <button
+            onClick={addNewPage}
+            className="px-4 py-2 bg-black text-white rounded hover:bg-gray-800"
+          >
+            + Add Page
+          </button>
         </div>
         <div className="z-10 bg-white border-b p-2 flex gap-2">
           <button
@@ -473,7 +542,7 @@ export default function ZineCanvas({
         ref={containerRef}
         className="relative bg-gray-50 h-[90vh] overflow-auto"
       >
-        <div className="min-h-full min-w-full flex items-center justify-center p-8">
+        <div className="min-h-full min-w-full flex flex-col items-center justify-center p-8 gap-8">
           <div
             className="bg-white shadow-lg"
             style={{
@@ -485,7 +554,7 @@ export default function ZineCanvas({
               position: "relative",
             }}
           >
-            {elements
+            {pages[currentPage].elements
               .sort((a, b) => a.zIndex - b.zIndex)
               .map((element, index) => (
                 <DraggableElement
@@ -493,19 +562,37 @@ export default function ZineCanvas({
                   element={element}
                   scale={scale}
                   onDelete={(id) => {
-                    setElements(elements.filter((el) => el.id !== id));
+                    setPages(
+                      pages.map((page, idx) =>
+                        idx === currentPage
+                          ? {
+                              ...page,
+                              elements: page.elements.filter(
+                                (el) => el.id !== id
+                              ),
+                            }
+                          : page
+                      )
+                    );
                   }}
                   onDragStop={handleDragStop}
                   onUpdateContent={(id, content) =>
-                    setElements(
-                      elements.map((el) =>
-                        el.id === id ? { ...el, content } : el
+                    setPages(
+                      pages.map((page, idx) =>
+                        idx === currentPage
+                          ? {
+                              ...page,
+                              elements: page.elements.map((el) =>
+                                el.id === id ? { ...el, content } : el
+                              ),
+                            }
+                          : page
                       )
                     )
                   }
                   onResize={handleResize}
                   onMoveLayer={handleMoveLayer}
-                  isTopLayer={index === elements.length - 1}
+                  isTopLayer={index === pages[currentPage].elements.length - 1}
                   isBottomLayer={index === 0}
                   canvasWidth={width}
                   canvasHeight={height}
