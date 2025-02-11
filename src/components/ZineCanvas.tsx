@@ -8,7 +8,7 @@ import StarterKit from "@tiptap/starter-kit";
 import { TextEditorBubbleMenu } from "./TextEditorBubbleMenu";
 import { FontSize } from "@tiptap/extension-font-size";
 import TextStyle from "@tiptap/extension-text-style";
-import { Color } from '@tiptap/extension-color'
+import { Color } from "@tiptap/extension-color";
 
 interface ZineCanvasProps {
   width?: number;
@@ -29,6 +29,7 @@ interface Element {
     height: number;
   };
   scale: number;
+  zIndex: number;
 }
 
 function DraggableElement({
@@ -38,8 +39,11 @@ function DraggableElement({
   onDragStop,
   onUpdateContent,
   onResize,
+  onMoveLayer,
   canvasWidth,
   canvasHeight,
+  isTopLayer,
+  isBottomLayer,
 }: {
   element: Element;
   scale: number;
@@ -53,8 +57,11 @@ function DraggableElement({
     x: number,
     y: number
   ) => void;
+  onMoveLayer: (id: string, direction: "up" | "down") => void;
   canvasWidth: number;
   canvasHeight: number;
+  isTopLayer: boolean;
+  isBottomLayer: boolean;
 }) {
   const nodeRef = useRef<HTMLDivElement>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -192,11 +199,30 @@ function DraggableElement({
         className={`absolute ${
           isEditing ? "cursor-text" : "cursor-grab group"
         }`}
+        style={{ zIndex: element.zIndex }}
         onDoubleClick={handleDoubleClick}
       >
         {element.type === "text" ? (
           <div className="relative">
             <div className="absolute -top-8 left-0 hidden group-hover:flex gap-1 bg-white shadow-md rounded px-2 py-1 z-10">
+              <button
+                onClick={() => onMoveLayer(element.id, "up")}
+                disabled={isTopLayer}
+                className={`text-gray-700 hover:text-gray-900 ${
+                  isTopLayer ? "opacity-50 cursor-not-allowed" : ""
+                }`}
+              >
+                ↑
+              </button>
+              <button
+                onClick={() => onMoveLayer(element.id, "down")}
+                disabled={isBottomLayer}
+                className={`text-gray-700 hover:text-gray-900 ${
+                  isBottomLayer ? "opacity-50 cursor-not-allowed" : ""
+                }`}
+              >
+                ↓
+              </button>
               <button
                 onClick={() => onDelete(element.id)}
                 className="text-red-500 hover:text-red-700"
@@ -213,6 +239,24 @@ function DraggableElement({
         ) : (
           <div className="relative group">
             <div className="absolute -top-8 left-0 hidden group-hover:flex gap-1 bg-white shadow-md rounded px-2 py-1 z-10">
+              <button
+                onClick={() => onMoveLayer(element.id, "up")}
+                disabled={isTopLayer}
+                className={`text-gray-700 hover:text-gray-900 ${
+                  isTopLayer ? "opacity-50 cursor-not-allowed" : ""
+                }`}
+              >
+                ↑
+              </button>
+              <button
+                onClick={() => onMoveLayer(element.id, "down")}
+                disabled={isBottomLayer}
+                className={`text-gray-700 hover:text-gray-900 ${
+                  isBottomLayer ? "opacity-50 cursor-not-allowed" : ""
+                }`}
+              >
+                ↓
+              </button>
               <button
                 onClick={() => onDelete(element.id)}
                 className="text-red-500 hover:text-red-700"
@@ -307,6 +351,7 @@ export default function ZineCanvas({
       content: "Double click to edit",
       position: { x: width / 2 - 50, y: height / 2 - 10 },
       scale: 1,
+      zIndex: elements.length + 1,
     };
     setElements([...elements, newElement]);
   };
@@ -326,6 +371,7 @@ export default function ZineCanvas({
             content: e.target?.result as string,
             position: { x: width / 2 - 100, y: height / 2 - 100 },
             scale: 1,
+            zIndex: elements.length + 1,
           };
           setElements([...elements, newElement]);
         };
@@ -370,6 +416,35 @@ export default function ZineCanvas({
     );
   };
 
+  const handleMoveLayer = (id: string, direction: "up" | "down") => {
+    setElements((prevElements) => {
+      const elementIndex = prevElements.findIndex((el) => el.id === id);
+      if (
+        (direction === "up" && elementIndex === prevElements.length - 1) ||
+        (direction === "down" && elementIndex === 0)
+      ) {
+        return prevElements;
+      }
+
+      const newElements = [...prevElements];
+      const element = newElements[elementIndex];
+      const swapIndex =
+        direction === "up" ? elementIndex + 1 : elementIndex - 1;
+      const swapElement = newElements[swapIndex];
+
+      // Swap zIndex values
+      const tempZIndex = element.zIndex;
+      element.zIndex = swapElement.zIndex;
+      swapElement.zIndex = tempZIndex;
+
+      // Swap positions in array
+      newElements[elementIndex] = swapElement;
+      newElements[swapIndex] = element;
+
+      return newElements;
+    });
+  };
+
   return (
     <div className="relative rounded-lg h-screen">
       <div className="flex justify-between bg-white">
@@ -410,27 +485,32 @@ export default function ZineCanvas({
               position: "relative",
             }}
           >
-            {elements.map((element) => (
-              <DraggableElement
-                key={element.id}
-                element={element}
-                scale={scale}
-                onDelete={(id) => {
-                  setElements(elements.filter((el) => el.id !== id));
-                }}
-                onDragStop={handleDragStop}
-                onUpdateContent={(id, content) =>
-                  setElements(
-                    elements.map((el) =>
-                      el.id === id ? { ...el, content } : el
+            {elements
+              .sort((a, b) => a.zIndex - b.zIndex)
+              .map((element, index) => (
+                <DraggableElement
+                  key={element.id}
+                  element={element}
+                  scale={scale}
+                  onDelete={(id) => {
+                    setElements(elements.filter((el) => el.id !== id));
+                  }}
+                  onDragStop={handleDragStop}
+                  onUpdateContent={(id, content) =>
+                    setElements(
+                      elements.map((el) =>
+                        el.id === id ? { ...el, content } : el
+                      )
                     )
-                  )
-                }
-                onResize={handleResize}
-                canvasWidth={width}
-                canvasHeight={height}
-              />
-            ))}
+                  }
+                  onResize={handleResize}
+                  onMoveLayer={handleMoveLayer}
+                  isTopLayer={index === elements.length - 1}
+                  isBottomLayer={index === 0}
+                  canvasWidth={width}
+                  canvasHeight={height}
+                />
+              ))}
           </div>
         </div>
       </div>
