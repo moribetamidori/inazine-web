@@ -461,31 +461,38 @@ export default function ZineCanvas({
 
   const handleMoveLayer = (id: string, direction: "up" | "down") => {
     setPages((prevPages) => {
-      const elementIndex = prevPages[currentPage].elements.findIndex(
-        (el) => el.id === id
-      );
+      const currentElements = [...prevPages[currentPage].elements];
+      const elementIndex = currentElements.findIndex((el) => el.id === id);
+
       if (
-        (direction === "up" &&
-          elementIndex === prevPages[currentPage].elements.length - 1) ||
+        (direction === "up" && elementIndex === currentElements.length - 1) ||
         (direction === "down" && elementIndex === 0)
       ) {
         return prevPages;
       }
 
-      const newElements = [...prevPages[currentPage].elements];
-      const element = newElements[elementIndex];
       const swapIndex =
         direction === "up" ? elementIndex + 1 : elementIndex - 1;
-      const swapElement = newElements[swapIndex];
 
-      // Swap zIndex values
-      const tempZIndex = element.zIndex;
-      element.zIndex = swapElement.zIndex;
-      swapElement.zIndex = tempZIndex;
+      // Update z-index values
+      const newElements = currentElements.map((el, idx) => {
+        if (idx === elementIndex) {
+          return {
+            ...el,
+            zIndex: direction === "up" ? el.zIndex + 1 : el.zIndex - 1,
+          };
+        }
+        if (idx === swapIndex) {
+          return {
+            ...el,
+            zIndex: direction === "up" ? el.zIndex - 1 : el.zIndex + 1,
+          };
+        }
+        return el;
+      });
 
-      // Swap positions in array
-      newElements[elementIndex] = swapElement;
-      newElements[swapIndex] = element;
+      // Sort elements by zIndex to maintain correct rendering order
+      newElements.sort((a, b) => a.zIndex - b.zIndex);
 
       return prevPages.map((page, index) =>
         index === currentPage ? { ...page, elements: newElements } : page
