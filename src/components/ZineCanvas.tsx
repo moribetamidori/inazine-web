@@ -8,6 +8,7 @@ import StarterKit from "@tiptap/starter-kit";
 import { TextEditorBubbleMenu } from "./TextEditorBubbleMenu";
 import { FontSize } from "@tiptap/extension-font-size";
 import TextStyle from "@tiptap/extension-text-style";
+import { Color } from '@tiptap/extension-color'
 
 interface ZineCanvasProps {
   width?: number;
@@ -64,7 +65,7 @@ function DraggableElement({
   });
 
   const editor = useEditor({
-    extensions: [StarterKit, TextStyle, FontSize.configure()],
+    extensions: [StarterKit, TextStyle, FontSize.configure(), TextStyle, Color],
     content: element.content,
     editable: isEditing,
     onBlur: ({ editor }) => {

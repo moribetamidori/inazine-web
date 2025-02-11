@@ -1,6 +1,5 @@
 import { Editor, BubbleMenu } from "@tiptap/react";
 import { useState } from "react";
-
 interface TextEditorBubbleMenuProps {
   editor: Editor;
 }
@@ -8,6 +7,8 @@ interface TextEditorBubbleMenuProps {
 export function TextEditorBubbleMenu({ editor }: TextEditorBubbleMenuProps) {
   const [inputValue, setInputValue] = useState("16");
   const [fontSize, setFontSize] = useState("16");
+  const [showColorPicker, setShowColorPicker] = useState(false);
+  const [currentColor, setCurrentColor] = useState("#000000");
 
   const handleFontSizeChange = (size: string) => {
     const sizeNumber = parseInt(size);
@@ -57,6 +58,34 @@ export function TextEditorBubbleMenu({ editor }: TextEditorBubbleMenuProps) {
       >
         S
       </button>
+      <div className="relative">
+        <button
+          onClick={() => setShowColorPicker(!showColorPicker)}
+          className={`px-2 py-1 rounded hover:bg-gray-100 flex items-center`}
+        >
+          <span
+            className="w-4 h-4 border border-gray-300 rounded-full"
+            style={{
+              backgroundColor:
+                editor.getAttributes("textStyle").color || currentColor,
+            }}
+          />
+        </button>
+        {showColorPicker && (
+          <div className="absolute top-full left-0 mt-1 bg-white shadow-lg rounded-lg p-2">
+            <input
+              type="color"
+              value={currentColor}
+              onChange={(e) => {
+                const newColor = e.target.value;
+                setCurrentColor(newColor);
+                editor.chain().focus().setColor(newColor).run();
+              }}
+              className="w-8 h-8 cursor-pointer"
+            />
+          </div>
+        )}
+      </div>
       <div className="relative flex items-center gap-1">
         <input
           type="number"
