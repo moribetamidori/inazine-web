@@ -47,6 +47,9 @@ importers:
       '@tiptap/starter-kit':
         specifier: ^2.11.5
         version: 2.11.5
+      '@types/react-resizable':
+        specifier: ^3.0.8
+        version: 3.0.8
       framer-motion:
         specifier: ^12.0.11
         version: 12.0.11(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
@@ -92,9 +95,15 @@ importers:
       react-draggable:
         specifier: ^4.4.6
         version: 4.4.6(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
+      react-image-file-resizer:
+        specifier: ^0.4.8
+        version: 0.4.8
       react-pageflip:
         specifier: ^2.0.3
         version: 2.0.3
+      react-resizable:
+        specifier: ^3.0.5
+        version: 3.0.5(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
       react-zoom-pan-pinch:
         specifier: ^3.7.0
         version: 3.7.0(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
@@ -821,6 +830,9 @@ packages:
     resolution: {integrity: sha512-HHM3nxyUZ3zAylX8ZEyrDNd2XZOnQ0D5XfunJF5FLQnZbHHYq4UWvW1QfelQNXv1ICNkwYhfxjwfnqivYB6bFg==}
     peerDependencies:
       '@types/react': '*'
+
+  '@types/react-resizable@3.0.8':
+    resolution: {integrity: sha512-Pcvt2eGA7KNXldt1hkhVhAgZ8hK41m0mp89mFgQi7LAAEZiaLgm4fHJ5zbJZ/4m2LVaAyYrrRRv1LHDcrGQanA==}
 
   '@types/react@19.0.8':
     resolution: {integrity: sha512-9P/o1IGdfmQxrujGbIMDyYaaCykhLKc0NGCtYcECNUr9UAaDe4gwvV9bR6tvd5Br1SG0j+PBpbKr2UYY8CwqSw==}
@@ -2193,6 +2205,9 @@ packages:
     peerDependencies:
       react: '>=16.13.1'
 
+  react-image-file-resizer@0.4.8:
+    resolution: {integrity: sha512-Ue7CfKnSlsfJ//SKzxNMz8avDgDSpWQDOnTKOp/GNRFJv4dO9L5YGHNEnj40peWkXXAK2OK0eRIoXhOYpUzUTQ==}
+
   react-is@16.13.1:
     resolution: {integrity: sha512-24e6ynE2H+OKt4kqsOvNd8kBpV65zoxbA4BVsEOB3ARVWQki/DHzaUoC5KuON/BiccDaCCTZBuOcfZs70kR8bQ==}
 
@@ -2204,6 +2219,11 @@ packages:
     engines: {node: '>=0.10.0'}
     peerDependencies:
       react: ^18.0.0
+
+  react-resizable@3.0.5:
+    resolution: {integrity: sha512-vKpeHhI5OZvYn82kXOs1bC8aOXktGU5AmKAgaZS4F5JPburCtbmDPqE7Pzp+1kN4+Wb81LlF33VpGwWwtXem+w==}
+    peerDependencies:
+      react: '>= 16.3'
 
   react-use-measure@2.1.7:
     resolution: {integrity: sha512-KrvcAo13I/60HpwGO5jpW7E9DfusKyLPLvuHlUyP5zqnmAPhNc6qTRjUQrdTADl0lpPpDVU2/Gg51UlOGHXbdg==}
@@ -3468,6 +3488,10 @@ snapshots:
       '@types/react': 19.0.8
 
   '@types/react-reconciler@0.28.9(@types/react@19.0.8)':
+    dependencies:
+      '@types/react': 19.0.8
+
+  '@types/react-resizable@3.0.8':
     dependencies:
       '@types/react': 19.0.8
 
@@ -5071,6 +5095,8 @@ snapshots:
       '@babel/runtime': 7.26.7
       react: 19.0.0
 
+  react-image-file-resizer@0.4.8: {}
+
   react-is@16.13.1: {}
 
   react-pageflip@2.0.3:
@@ -5082,6 +5108,14 @@ snapshots:
       loose-envify: 1.4.0
       react: 19.0.0
       scheduler: 0.21.0
+
+  react-resizable@3.0.5(react-dom@19.0.0(react@19.0.0))(react@19.0.0):
+    dependencies:
+      prop-types: 15.8.1
+      react: 19.0.0
+      react-draggable: 4.4.6(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
+    transitivePeerDependencies:
+      - react-dom
 
   react-use-measure@2.1.7(react-dom@19.0.0(react@19.0.0))(react@19.0.0):
     dependencies:

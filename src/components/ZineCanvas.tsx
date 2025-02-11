@@ -23,7 +23,10 @@ interface Element {
     x: number;
     y: number;
   };
-  scale?: number;
+  dimensions?: {
+    width: number;
+    height: number;
+  };
 }
 
 function DraggableElement({
@@ -32,12 +35,20 @@ function DraggableElement({
   onDelete,
   onDragStop,
   onUpdateContent,
+  onResize,
 }: {
   element: Element;
   scale: number;
   onDelete: (id: string) => void;
   onDragStop: (id: string, x: number, y: number) => void;
   onUpdateContent: (id: string, content: string) => void;
+  onResize: (
+    id: string,
+    width: number,
+    height: number,
+    x: number,
+    y: number
+  ) => void;
 }) {
   const nodeRef = useRef<HTMLDivElement>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -93,6 +104,66 @@ function DraggableElement({
     }
   };
 
+  const handleResize = (corner: string, e: MouseEvent) => {
+    if (!nodeRef.current || element.type !== "image") return;
+
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const startWidth = element.dimensions?.width || imageDimensions.width;
+    const startHeight = element.dimensions?.height || imageDimensions.height;
+    const startPosition = { ...element.position };
+    const aspectRatio = startWidth / startHeight;
+
+    const onMouseMove = (e: MouseEvent) => {
+      const deltaX = (e.clientX - startX) / scale;
+      const deltaY = (e.clientY - startY) / scale;
+
+      let newWidth = startWidth;
+      let newHeight = startHeight;
+      let newX = startPosition.x;
+      let newY = startPosition.y;
+
+      switch (corner) {
+        case "bottomRight":
+          newWidth = startWidth + deltaX;
+          newHeight = newWidth / aspectRatio;
+
+          break;
+        case "bottomLeft":
+          newWidth = startWidth - deltaX;
+          newHeight = newWidth / aspectRatio;
+          newX = startPosition.x + startWidth - newWidth;
+          newY = startPosition.y;
+          break;
+        case "topRight":
+          newWidth = startWidth + deltaX;
+          newHeight = newWidth / aspectRatio;
+          newX = startPosition.x;
+          newY = startPosition.y + (startHeight - newHeight);
+          break;
+        case "topLeft":
+          newWidth = startWidth - deltaX;
+          newHeight = newWidth / aspectRatio;
+          newX = startPosition.x + (startWidth - newWidth);
+          newY = startPosition.y + (startHeight - newHeight);
+          break;
+      }
+
+      // Ensure minimum size
+      if (newWidth >= 50 && newHeight >= 50) {
+        onResize(element.id, newWidth, newHeight, newX, newY);
+      }
+    };
+
+    const onMouseUp = () => {
+      document.removeEventListener("mousemove", onMouseMove);
+      document.removeEventListener("mouseup", onMouseUp);
+    };
+
+    document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseup", onMouseUp);
+  };
+
   return (
     <Draggable
       nodeRef={nodeRef as RefObject<HTMLElement>}
@@ -127,7 +198,7 @@ function DraggableElement({
             </div>
           </div>
         ) : (
-          <div className="relative">
+          <div className="relative group">
             <div className="absolute -top-8 left-0 hidden group-hover:flex gap-1 bg-white shadow-md rounded px-2 py-1 z-10">
               <button
                 onClick={() => onDelete(element.id)}
@@ -137,14 +208,34 @@ function DraggableElement({
               </button>
             </div>
             {imageDimensions.width > 0 && (
-              <Image
-                src={element.content}
-                alt="User uploaded"
-                width={imageDimensions.width}
-                height={imageDimensions.height}
-                className="object-contain"
-                style={{ pointerEvents: "none" }}
-              />
+              <>
+                <Image
+                  src={element.content}
+                  alt="User uploaded"
+                  width={element.dimensions?.width || imageDimensions.width}
+                  height={element.dimensions?.height || imageDimensions.height}
+                  className="object-contain"
+                  style={{ pointerEvents: "none" }}
+                />
+                <div
+                  className="absolute w-3 h-3 bg-white border-2 border-black rounded-full cursor-nw-resize -top-1.5 -left-1.5"
+                  onMouseDown={(e) => handleResize("topLeft", e.nativeEvent)}
+                />
+                <div
+                  className="absolute w-3 h-3 bg-white border-2 border-black rounded-full cursor-ne-resize -top-1.5 -right-1.5"
+                  onMouseDown={(e) => handleResize("topRight", e.nativeEvent)}
+                />
+                <div
+                  className="absolute w-3 h-3 bg-white border-2 border-black rounded-full cursor-sw-resize -bottom-1.5 -left-1.5"
+                  onMouseDown={(e) => handleResize("bottomLeft", e.nativeEvent)}
+                />
+                <div
+                  className="absolute w-3 h-3 bg-white border-2 border-black rounded-full cursor-se-resize -bottom-1.5 -right-1.5"
+                  onMouseDown={(e) =>
+                    handleResize("bottomRight", e.nativeEvent)
+                  }
+                />
+              </>
             )}
           </div>
         )}
@@ -234,6 +325,27 @@ export default function ZineCanvas({
     );
   };
 
+  const handleResize = (
+    id: string,
+    width: number,
+    height: number,
+    x: number,
+    y: number
+  ) => {
+    setElements((elements) =>
+      elements.map((el) => {
+        if (el.id === id) {
+          return {
+            ...el,
+            dimensions: { width, height },
+            position: { x, y },
+          };
+        }
+        return el;
+      })
+    );
+  };
+
   return (
     <div className="relative rounded-lg h-screen">
       <div className="flex justify-between bg-white">
@@ -289,6 +401,7 @@ export default function ZineCanvas({
                     )
                   )
                 }
+                onResize={handleResize}
               />
             ))}
           </div>
