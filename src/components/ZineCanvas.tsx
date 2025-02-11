@@ -27,6 +27,7 @@ interface Element {
     width: number;
     height: number;
   };
+  scale: number;
 }
 
 function DraggableElement({
@@ -36,6 +37,8 @@ function DraggableElement({
   onDragStop,
   onUpdateContent,
   onResize,
+  canvasWidth,
+  canvasHeight,
 }: {
   element: Element;
   scale: number;
@@ -49,9 +52,12 @@ function DraggableElement({
     x: number,
     y: number
   ) => void;
+  canvasWidth: number;
+  canvasHeight: number;
 }) {
   const nodeRef = useRef<HTMLDivElement>(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [isResizing, setIsResizing] = useState(false);
   const [imageDimensions, setImageDimensions] = useState({
     width: 0,
     height: 0,
@@ -95,12 +101,21 @@ function DraggableElement({
   }, [element]);
 
   const handleDragStop = (e: DraggableEvent, data: DraggableData) => {
-    onDragStop(element.id, data.x, data.y);
+    const elementWidth = nodeRef.current?.offsetWidth || 0;
+    const elementHeight = nodeRef.current?.offsetHeight || 0;
+
+    // Constrain position within canvas boundaries
+    const x = Math.min(Math.max(0, data.x), canvasWidth - elementWidth);
+    const y = Math.min(Math.max(0, data.y), canvasHeight - elementHeight);
+
+    onDragStop(element.id, x, y);
   };
 
   const handleDoubleClick = () => {
     if (element.type === "text") {
       setIsEditing(true);
+    } else if (element.type === "image") {
+      setIsResizing(!isResizing);
     }
   };
 
@@ -108,7 +123,6 @@ function DraggableElement({
     if (!nodeRef.current || element.type !== "image") return;
 
     const startX = e.clientX;
-    const startY = e.clientY;
     const startWidth = element.dimensions?.width || imageDimensions.width;
     const startHeight = element.dimensions?.height || imageDimensions.height;
     const startPosition = { ...element.position };
@@ -116,7 +130,6 @@ function DraggableElement({
 
     const onMouseMove = (e: MouseEvent) => {
       const deltaX = (e.clientX - startX) / scale;
-      const deltaY = (e.clientY - startY) / scale;
 
       let newWidth = startWidth;
       let newHeight = startHeight;
@@ -170,6 +183,7 @@ function DraggableElement({
       position={{ x: element.position.x, y: element.position.y }}
       scale={scale}
       onStop={handleDragStop}
+      bounds="parent"
       disabled={isEditing}
     >
       <div
@@ -177,6 +191,7 @@ function DraggableElement({
         className={`absolute ${
           isEditing ? "cursor-text" : "cursor-grab group"
         }`}
+        onDoubleClick={handleDoubleClick}
       >
         {element.type === "text" ? (
           <div className="relative">
@@ -189,10 +204,7 @@ function DraggableElement({
               </button>
             </div>
 
-            <div
-              className="min-w-[100px] p-2 relative"
-              onDoubleClick={handleDoubleClick}
-            >
+            <div className="min-w-[100px] p-2 relative">
               <EditorContent editor={editor} />
               {editor && <TextEditorBubbleMenu editor={editor} />}
             </div>
@@ -217,24 +229,34 @@ function DraggableElement({
                   className="object-contain"
                   style={{ pointerEvents: "none" }}
                 />
-                <div
-                  className="absolute w-3 h-3 bg-white border-2 border-black rounded-full cursor-nw-resize -top-1.5 -left-1.5"
-                  onMouseDown={(e) => handleResize("topLeft", e.nativeEvent)}
-                />
-                <div
-                  className="absolute w-3 h-3 bg-white border-2 border-black rounded-full cursor-ne-resize -top-1.5 -right-1.5"
-                  onMouseDown={(e) => handleResize("topRight", e.nativeEvent)}
-                />
-                <div
-                  className="absolute w-3 h-3 bg-white border-2 border-black rounded-full cursor-sw-resize -bottom-1.5 -left-1.5"
-                  onMouseDown={(e) => handleResize("bottomLeft", e.nativeEvent)}
-                />
-                <div
-                  className="absolute w-3 h-3 bg-white border-2 border-black rounded-full cursor-se-resize -bottom-1.5 -right-1.5"
-                  onMouseDown={(e) =>
-                    handleResize("bottomRight", e.nativeEvent)
-                  }
-                />
+                {isResizing && (
+                  <>
+                    <div
+                      className="absolute w-3 h-3 bg-white border-2 border-black rounded-full cursor-nw-resize -top-1.5 -left-1.5"
+                      onMouseDown={(e) =>
+                        handleResize("topLeft", e.nativeEvent)
+                      }
+                    />
+                    <div
+                      className="absolute w-3 h-3 bg-white border-2 border-black rounded-full cursor-ne-resize -top-1.5 -right-1.5"
+                      onMouseDown={(e) =>
+                        handleResize("topRight", e.nativeEvent)
+                      }
+                    />
+                    <div
+                      className="absolute w-3 h-3 bg-white border-2 border-black rounded-full cursor-sw-resize -bottom-1.5 -left-1.5"
+                      onMouseDown={(e) =>
+                        handleResize("bottomLeft", e.nativeEvent)
+                      }
+                    />
+                    <div
+                      className="absolute w-3 h-3 bg-white border-2 border-black rounded-full cursor-se-resize -bottom-1.5 -right-1.5"
+                      onMouseDown={(e) =>
+                        handleResize("bottomRight", e.nativeEvent)
+                      }
+                    />
+                  </>
+                )}
               </>
             )}
           </div>
@@ -283,6 +305,7 @@ export default function ZineCanvas({
       type: "text",
       content: "Double click to edit",
       position: { x: width / 2 - 50, y: height / 2 - 10 },
+      scale: 1,
     };
     setElements([...elements, newElement]);
   };
@@ -383,6 +406,7 @@ export default function ZineCanvas({
               transform: `scale(${scale})`,
               transformOrigin: "top",
               margin: `0px ${Math.max(((scale - 1) * width) / 2, 0)}px`,
+              position: "relative",
             }}
           >
             {elements.map((element) => (
@@ -402,6 +426,8 @@ export default function ZineCanvas({
                   )
                 }
                 onResize={handleResize}
+                canvasWidth={width}
+                canvasHeight={height}
               />
             ))}
           </div>
