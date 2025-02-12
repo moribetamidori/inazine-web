@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, RefObject } from "react";
 import Draggable from "react-draggable";
 import type { DraggableEvent, DraggableData } from "react-draggable";
-import type { Zine } from "@/types/zine";
+import type { Zine, Page, Element } from "@/types/zine";
 import Image from "next/image";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
@@ -11,34 +11,13 @@ import TextStyle from "@tiptap/extension-text-style";
 import { Color } from "@tiptap/extension-color";
 import html2canvas from "html2canvas";
 import ZinePreview from "./ZinePreview";
+import { createPage, getPagesByZineId } from "@/lib/page";
+import { createElement, updateElement, deleteElement } from "@/lib/element";
 
 interface ZineCanvasProps {
   width?: number;
   height?: number;
   zine?: Zine;
-}
-
-interface Element {
-  id: string;
-  pageId: string;
-  type: "text" | "image";
-  content: string;
-  position: {
-    x: number;
-    y: number;
-  };
-  dimensions?: {
-    width: number;
-    height: number;
-  };
-  scale: number;
-  zIndex: number;
-}
-
-interface Page {
-  id: string;
-  zineId: string;
-  elements: Element[];
 }
 
 function DraggableElement({
@@ -140,9 +119,12 @@ function DraggableElement({
     if (!nodeRef.current || element.type !== "image") return;
 
     const startX = e.clientX;
-    const startWidth = element.dimensions?.width || imageDimensions.width;
-    const startHeight = element.dimensions?.height || imageDimensions.height;
-    const startPosition = { ...element.position };
+    const startWidth = element.width || imageDimensions.width;
+    const startHeight = element.height || imageDimensions.height;
+    const startPosition = {
+      x: element.position_x,
+      y: element.position_y,
+    };
     const aspectRatio = startWidth / startHeight;
 
     const onMouseMove = (e: MouseEvent) => {
@@ -197,7 +179,7 @@ function DraggableElement({
   return (
     <Draggable
       nodeRef={nodeRef as RefObject<HTMLElement>}
-      position={{ x: element.position.x, y: element.position.y }}
+      position={{ x: element.position_x, y: element.position_y }}
       scale={scale}
       onStop={handleDragStop}
       bounds="parent"
@@ -208,7 +190,7 @@ function DraggableElement({
         className={`absolute ${
           isEditing ? "cursor-text" : "cursor-grab group"
         }`}
-        style={{ zIndex: element.zIndex }}
+        style={{ zIndex: element.z_index }}
         onDoubleClick={handleDoubleClick}
       >
         {element.type === "text" ? (
@@ -278,8 +260,8 @@ function DraggableElement({
                 <Image
                   src={element.content}
                   alt="User uploaded"
-                  width={element.dimensions?.width || imageDimensions.width}
-                  height={element.dimensions?.height || imageDimensions.height}
+                  width={element.width || imageDimensions.width}
+                  height={element.height || imageDimensions.height}
                   className="object-contain"
                   style={{ pointerEvents: "none" }}
                 />
@@ -325,19 +307,37 @@ export default function ZineCanvas({
   height = 1200,
   zine,
 }: ZineCanvasProps) {
-  const [pages, setPages] = useState<Page[]>([
-    {
-      id: "1",
-      zineId: zine?.id || "",
-      elements: [],
-    },
-  ]);
+  const [pages, setPages] = useState<Page[]>([]);
   const [currentPage, setCurrentPage] = useState(0);
   const [scale, setScale] = useState(0.5);
   const containerRef = useRef<HTMLDivElement>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [previewPages, setPreviewPages] = useState<string[]>([]);
   const pageRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  // Load pages from database on mount
+  useEffect(() => {
+    if (!zine?.id) return;
+
+    const fetchPages = async () => {
+      try {
+        const fetchedPages = await getPagesByZineId(zine.id);
+        setPages(
+          fetchedPages.map((page) => ({
+            ...page,
+            elements: page.elements.map((el) => ({
+              ...el,
+              type: el.type as "text" | "image",
+            })),
+          }))
+        );
+      } catch (error) {
+        console.error("Error fetching pages:", error);
+      }
+    };
+
+    fetchPages();
+  }, [zine?.id]);
 
   // Handle zoom with trackpad/mouse wheel
   const handleWheel = (e: WheelEvent) => {
@@ -363,26 +363,43 @@ export default function ZineCanvas({
     };
   }, []);
 
-  const addText = () => {
-    const newElement: Element = {
-      id: `text-${Date.now()}`,
-      pageId: pages[currentPage].id,
-      type: "text",
-      content: "Double click to edit",
-      position: { x: width / 2 - 50, y: height / 2 - 10 },
-      scale: 1,
-      zIndex: pages[currentPage].elements.length + 1,
-    };
-    setPages(
-      pages.map((page, index) =>
-        index === currentPage
-          ? { ...page, elements: [...page.elements, newElement] }
-          : page
-      )
-    );
+  const addText = async () => {
+    if (!pages[currentPage]?.id) return;
+
+    try {
+      const newElement = await createElement({
+        page_id: pages[currentPage].id,
+        type: "text",
+        content: "Double click to edit",
+        position_x: width / 2 - 50,
+        position_y: height / 2 - 10,
+        scale: 1,
+        z_index: pages[currentPage].elements.length + 1,
+        width: null,
+        height: null,
+      });
+
+      setPages(
+        pages.map((page, index) =>
+          index === currentPage
+            ? {
+                ...page,
+                elements: [
+                  ...page.elements,
+                  { ...newElement, type: newElement.type as "text" | "image" },
+                ],
+              }
+            : page
+        )
+      );
+    } catch (error) {
+      console.error("Error adding text element:", error);
+    }
   };
 
   const addImage = async () => {
+    if (!pages[currentPage]?.id) return;
+
     const input = document.createElement("input");
     input.type = "file";
     input.accept = "image/*";
@@ -390,23 +407,39 @@ export default function ZineCanvas({
       const file = (e.target as HTMLInputElement).files?.[0];
       if (file) {
         const reader = new FileReader();
-        reader.onload = (e) => {
-          const newElement: Element = {
-            id: `image-${Date.now()}`,
-            pageId: pages[currentPage].id,
-            type: "image",
-            content: e.target?.result as string,
-            position: { x: width / 2 - 100, y: height / 2 - 100 },
-            scale: 1,
-            zIndex: pages[currentPage].elements.length + 1,
-          };
-          setPages(
-            pages.map((page, index) =>
-              index === currentPage
-                ? { ...page, elements: [...page.elements, newElement] }
-                : page
-            )
-          );
+        reader.onload = async (e) => {
+          try {
+            const newElement = await createElement({
+              page_id: pages[currentPage].id,
+              type: "image",
+              content: e.target?.result as string,
+              position_x: width / 2 - 100,
+              position_y: height / 2 - 100,
+              scale: 1,
+              z_index: pages[currentPage].elements.length + 1,
+              width: null,
+              height: null,
+            });
+
+            setPages(
+              pages.map((page, index) =>
+                index === currentPage
+                  ? {
+                      ...page,
+                      elements: [
+                        ...page.elements,
+                        {
+                          ...newElement,
+                          type: newElement.type as "text" | "image",
+                        },
+                      ],
+                    }
+                  : page
+              )
+            );
+          } catch (error) {
+            console.error("Error adding image element:", error);
+          }
         };
         reader.readAsDataURL(file);
       }
@@ -414,40 +447,51 @@ export default function ZineCanvas({
     input.click();
   };
 
-  const addNewPage = () => {
-    setPages([
-      ...pages,
-      {
-        id: Date.now().toString(),
-        zineId: zine?.id || "",
-        elements: [],
-      },
-    ]);
-    setCurrentPage(pages.length);
+  const addNewPage = async () => {
+    if (!zine?.id) return;
+
+    try {
+      const newPage = await createPage(zine.id);
+      setPages([...pages, { ...newPage, elements: [] }]);
+      setCurrentPage(pages.length);
+    } catch (error) {
+      console.error("Error creating new page:", error);
+    }
   };
 
-  const handleDragStop = (id: string, x: number, y: number) => {
+  const handleDragStop = async (id: string, x: number, y: number) => {
+    // Update local state first (optimistic update)
     setPages(
       pages.map((page, index) =>
         index === currentPage
           ? {
               ...page,
               elements: page.elements.map((el) =>
-                el.id === id ? { ...el, position: { x, y } } : el
+                el.id === id ? { ...el, position_x: x, position_y: y } : el
               ),
             }
           : page
       )
     );
+
+    // Then update database
+    try {
+      await updateElement(id, { position_x: x, position_y: y });
+    } catch (error) {
+      console.error("Error updating element position:", error);
+      // Optionally revert the optimistic update if the database update fails
+      // You might want to add a toast notification here
+    }
   };
 
-  const handleResize = (
+  const handleResize = async (
     id: string,
     width: number,
     height: number,
     x: number,
     y: number
   ) => {
+    // Update local state first (optimistic update)
     setPages(
       pages.map((page, index) =>
         index === currentPage
@@ -455,54 +499,133 @@ export default function ZineCanvas({
               ...page,
               elements: page.elements.map((el) =>
                 el.id === id
-                  ? { ...el, dimensions: { width, height }, position: { x, y } }
+                  ? {
+                      ...el,
+                      width,
+                      height,
+                      position_x: x,
+                      position_y: y,
+                    }
                   : el
               ),
             }
           : page
       )
     );
+
+    // Then update database
+    try {
+      await updateElement(id, {
+        width,
+        height,
+        position_x: x,
+        position_y: y,
+      });
+    } catch (error) {
+      console.error("Error updating element size:", error);
+      // Optionally revert the optimistic update if the database update fails
+    }
   };
 
-  const handleMoveLayer = (id: string, direction: "up" | "down") => {
-    setPages((prevPages) => {
-      const currentElements = [...prevPages[currentPage].elements];
-      const elementIndex = currentElements.findIndex((el) => el.id === id);
+  const handleMoveLayer = async (id: string, direction: "up" | "down") => {
+    const currentElements = [...pages[currentPage].elements];
+    const elementIndex = currentElements.findIndex((el) => el.id === id);
 
-      if (
-        (direction === "up" && elementIndex === currentElements.length - 1) ||
-        (direction === "down" && elementIndex === 0)
-      ) {
-        return prevPages;
+    if (
+      (direction === "up" && elementIndex === currentElements.length - 1) ||
+      (direction === "down" && elementIndex === 0)
+    ) {
+      return;
+    }
+
+    const swapIndex = direction === "up" ? elementIndex + 1 : elementIndex - 1;
+
+    // Update local state first
+    const newElements = currentElements.map((el, idx) => {
+      if (idx === elementIndex) {
+        return {
+          ...el,
+          type: el.type as "text" | "image",
+          z_index: direction === "up" ? el.z_index + 1 : el.z_index - 1,
+        };
       }
-
-      const swapIndex =
-        direction === "up" ? elementIndex + 1 : elementIndex - 1;
-
-      // Update z-index values
-      const newElements = currentElements.map((el, idx) => {
-        if (idx === elementIndex) {
-          return {
-            ...el,
-            zIndex: direction === "up" ? el.zIndex + 1 : el.zIndex - 1,
-          };
-        }
-        if (idx === swapIndex) {
-          return {
-            ...el,
-            zIndex: direction === "up" ? el.zIndex - 1 : el.zIndex + 1,
-          };
-        }
-        return el;
-      });
-
-      // Sort elements by zIndex to maintain correct rendering order
-      newElements.sort((a, b) => a.zIndex - b.zIndex);
-
-      return prevPages.map((page, index) =>
-        index === currentPage ? { ...page, elements: newElements } : page
-      );
+      if (idx === swapIndex) {
+        return {
+          ...el,
+          type: el.type as "text" | "image",
+          z_index: direction === "up" ? el.z_index - 1 : el.z_index + 1,
+        };
+      }
+      return { ...el, type: el.type as "text" | "image" };
     });
+
+    newElements.sort((a, b) => a.z_index - b.z_index);
+
+    setPages(
+      pages.map((page, index) =>
+        index === currentPage ? { ...page, elements: newElements } : page
+      )
+    );
+
+    // Then update database
+    try {
+      await Promise.all([
+        updateElement(currentElements[elementIndex].id, {
+          z_index:
+            direction === "up"
+              ? currentElements[elementIndex].z_index + 1
+              : currentElements[elementIndex].z_index - 1,
+        }),
+        updateElement(currentElements[swapIndex].id, {
+          z_index:
+            direction === "up"
+              ? currentElements[swapIndex].z_index - 1
+              : currentElements[swapIndex].z_index + 1,
+        }),
+      ]);
+    } catch (error) {
+      console.error("Error updating element layers:", error);
+      // Optionally revert the optimistic update if the database update fails
+    }
+  };
+
+  // Update the DraggableElement props to include onDelete handler
+  const handleDeleteElement = async (id: string) => {
+    try {
+      await deleteElement(id);
+      setPages(
+        pages.map((page, idx) =>
+          idx === currentPage
+            ? {
+                ...page,
+                elements: page.elements.filter((el) => el.id !== id),
+              }
+            : page
+        )
+      );
+    } catch (error) {
+      console.error("Error deleting element:", error);
+    }
+  };
+
+  const handleUpdateContent = async (id: string, content: string) => {
+    try {
+      await updateElement(id, { content });
+      setPages(
+        pages.map((page, idx) =>
+          idx === currentPage
+            ? {
+                ...page,
+                elements: page.elements.map((el) =>
+                  el.id === id ? { ...el, content } : el
+                ),
+              }
+            : page
+        )
+      );
+    } catch (error) {
+      console.error("Error updating element content:", error);
+    }
   };
 
   const generatePreview = async () => {
@@ -631,45 +754,19 @@ export default function ZineCanvas({
               }}
             >
               {page.elements
-                .sort((a, b) => a.zIndex - b.zIndex)
+                .sort((a, b) => a.z_index - b.z_index)
                 .map((element, index) => (
                   <DraggableElement
                     key={element.id}
                     element={element}
                     scale={scale}
-                    onDelete={(id) => {
-                      setPages(
-                        pages.map((page, idx) =>
-                          idx === currentPage
-                            ? {
-                                ...page,
-                                elements: page.elements.filter(
-                                  (el) => el.id !== id
-                                ),
-                              }
-                            : page
-                        )
-                      );
-                    }}
+                    onDelete={handleDeleteElement}
                     onDragStop={handleDragStop}
-                    onUpdateContent={(id, content) =>
-                      setPages(
-                        pages.map((page, idx) =>
-                          idx === currentPage
-                            ? {
-                                ...page,
-                                elements: page.elements.map((el) =>
-                                  el.id === id ? { ...el, content } : el
-                                ),
-                              }
-                            : page
-                        )
-                      )
-                    }
+                    onUpdateContent={handleUpdateContent}
                     onResize={handleResize}
                     onMoveLayer={handleMoveLayer}
                     isTopLayer={
-                      index === pages[currentPage].elements.length - 1
+                      index === (pages[currentPage]?.elements?.length ?? 0) - 1
                     }
                     isBottomLayer={index === 0}
                     canvasWidth={width}

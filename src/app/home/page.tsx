@@ -30,7 +30,7 @@ export default function HomePage() {
   };
 
   return (
-    <AuthenticatedLayout>
+    <AuthenticatedLayout onNewZine={() => setIsModalOpen(true)}>
       <div className="text-center py-12">
         <h2 className="text-2xl text-gray-600 mb-4">Your feed is empty</h2>
         <p className="text-gray-500 mb-8">
@@ -88,7 +88,7 @@ export default function HomePage() {
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Type channel name"
+                  placeholder="Type zine title"
                   className="w-full px-3 py-2 border rounded-md"
                 />
               </div>
@@ -110,7 +110,7 @@ export default function HomePage() {
                 onClick={handleCreateZine}
                 className="w-full px-4 py-2 bg-black text-white rounded-md hover:bg-gray-800"
               >
-                Create channel
+                Create Zine
               </button>
             </div>
           </div>

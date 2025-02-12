@@ -5,11 +5,15 @@ import { useRouter } from "next/navigation";
 import UserMenu from "./UserMenu";
 import NavLinks from "./NavLinks";
 
+interface AuthenticatedLayoutProps {
+  children: React.ReactNode;
+  onNewZine?: () => void;
+}
+
 export default function AuthenticatedLayout({
   children,
-}: {
-  children: React.ReactNode;
-}) {
+  onNewZine,
+}: AuthenticatedLayoutProps) {
   const { user, loading } = useAuth();
   const router = useRouter();
 
@@ -39,7 +43,10 @@ export default function AuthenticatedLayout({
           />
         </div>
         <div className="flex items-center gap-4">
-          <button className="px-4 py-1 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors">
+          <button
+            onClick={onNewZine}
+            className="px-4 py-1 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+          >
             New zine +
           </button>
           <UserMenu />
