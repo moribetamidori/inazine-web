@@ -60,12 +60,46 @@ function DraggableElement({
   });
 
   const editor = useEditor({
-    extensions: [StarterKit, TextStyle, FontSize.configure(), TextStyle, Color],
+    extensions: [
+      StarterKit.configure({
+        heading: false,
+        bulletList: false,
+        orderedList: false,
+      }),
+      TextStyle.configure({
+        HTMLAttributes: {
+          class: "text-style",
+        },
+      }),
+      FontSize.configure({
+        types: ["textStyle"],
+      }),
+      Color.configure({
+        types: ["textStyle"],
+      }),
+    ],
     content: element.content,
     editable: isEditing,
+    onCreate: ({ editor }) => {
+      console.log("Editor created with content:", editor.getHTML());
+      if (element.type === "text") {
+        const content = editor.getHTML();
+        onUpdateContent(element.id, content);
+      }
+    },
+    onUpdate: ({ editor }) => {
+      console.log("Editor content updated:", editor.getHTML());
+      if (element.type === "text") {
+        const content = editor.getHTML();
+        onUpdateContent(element.id, content);
+      }
+    },
     onBlur: ({ editor }) => {
+      console.log("Editor blur event, content:", editor.getHTML());
+      console.log("Editor state:", editor.getJSON());
       setIsEditing(false);
-      onUpdateContent(element.id, editor.getHTML());
+      const content = editor.getHTML();
+      onUpdateContent(element.id, content);
     },
   });
 
@@ -610,9 +644,12 @@ export default function ZineCanvas({
 
   const handleUpdateContent = async (id: string, content: string) => {
     try {
+      console.log("Content being sent to database:", content); // Debug log
       await updateElement(id, { content });
-      setPages(
-        pages.map((page, idx) =>
+
+      // Log the updated state
+      setPages((prevPages) => {
+        const newPages = prevPages.map((page, idx) =>
           idx === currentPage
             ? {
                 ...page,
@@ -621,8 +658,10 @@ export default function ZineCanvas({
                 ),
               }
             : page
-        )
-      );
+        );
+        console.log("Updated pages state:", newPages[currentPage].elements); // Debug log
+        return newPages;
+      });
     } catch (error) {
       console.error("Error updating element content:", error);
     }
