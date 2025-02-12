@@ -1,7 +1,17 @@
+interface TurnJsOptions {
+  width?: number;
+  height?: number;
+  autoCenter?: boolean;
+  display?: 'single' | 'double';
+  acceleration?: boolean;
+  elevation?: number;
+  gradients?: boolean;
+}
+
 interface JQuery {
-  turn(options?: any): JQuery;
+  turn(options?: TurnJsOptions): JQuery;
   turn(command: string): JQuery;
-  data(): any;
+  data(): { turn?: boolean } | undefined;
 }
 
 interface Window {
