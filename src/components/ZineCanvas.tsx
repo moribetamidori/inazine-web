@@ -494,6 +494,20 @@ export default function ZineCanvas({
   };
 
   const handleDragStop = async (id: string, x: number, y: number) => {
+    console.log("handleDragStop called with id:", id);
+    console.log("Current page elements:", pages[currentPage]?.elements);
+
+    // Check if element still exists in current page
+    const elementExists = pages[currentPage]?.elements.some(
+      (el) => el.id === id
+    );
+    console.log("Element exists?:", elementExists);
+
+    if (!elementExists) {
+      console.log("Element no longer exists, returning early");
+      return;
+    }
+
     // Update local state first (optimistic update)
     setPages(
       pages.map((page, index) =>
@@ -508,14 +522,7 @@ export default function ZineCanvas({
       )
     );
 
-    // Then update database
-    try {
-      await updateElement(id, { position_x: x, position_y: y });
-    } catch (error) {
-      console.error("Error updating element position:", error);
-      // Optionally revert the optimistic update if the database update fails
-      // You might want to add a toast notification here
-    }
+    await updateElement(id, { position_x: x, position_y: y }).catch(() => {});
   };
 
   const handleResize = async (
@@ -724,27 +731,6 @@ export default function ZineCanvas({
         <div className="p-2">
           <h1 className="text-2xl font-bold">{zine?.title}</h1>
         </div>
-        <div className="flex gap-4 p-2">
-          {pages.map((_, index) => (
-            <button
-              key={index}
-              onClick={() => setCurrentPage(index)}
-              className={`px-4 py-2 rounded ${
-                currentPage === index
-                  ? "bg-black text-white"
-                  : "bg-gray-200 hover:bg-gray-300"
-              }`}
-            >
-              Page {index + 1}
-            </button>
-          ))}
-          <button
-            onClick={addNewPage}
-            className="px-4 py-2 bg-black text-white rounded hover:bg-gray-800"
-          >
-            + Add Page
-          </button>
-        </div>
         <div className="z-10 bg-white border-b p-2 flex gap-2">
           <button
             onClick={addText}
@@ -769,51 +755,80 @@ export default function ZineCanvas({
           </span>
         </div>
       </div>
-      <div
-        ref={containerRef}
-        className="relative bg-gray-50 h-[90vh] overflow-auto"
-      >
-        <div className="min-h-full min-w-full flex flex-col items-center justify-center p-8 gap-8">
-          {pages.map((page, pageIndex) => (
-            <div
-              key={page.id}
-              ref={(el) => {
-                pageRefs.current[pageIndex] = el;
-              }}
-              className={`bg-white shadow-lg ${
-                pageIndex !== currentPage ? "hidden" : ""
+      <div className="flex h-[90vh]">
+        {/* Left sidebar with page thumbnails */}
+        <div className="w-48 bg-gray-100 overflow-y-auto border-r border-gray-200 flex flex-col gap-2 p-2">
+          {pages.map((_, index) => (
+            <button
+              key={index}
+              onClick={() => setCurrentPage(index)}
+              className={`relative aspect-[3/4] rounded-lg transition-all ${
+                currentPage === index
+                  ? "ring-2 ring-black ring-offset-2"
+                  : "hover:bg-gray-200"
               }`}
-              style={{
-                width,
-                height,
-                transform: `scale(${scale})`,
-                transformOrigin: "top",
-                margin: `0px ${Math.max(((scale - 1) * width) / 2, 0)}px`,
-                position: "relative",
-              }}
             >
-              {page.elements
-                .sort((a, b) => a.z_index - b.z_index)
-                .map((element, index) => (
-                  <DraggableElement
-                    key={element.id}
-                    element={element}
-                    scale={scale}
-                    onDelete={handleDeleteElement}
-                    onDragStop={handleDragStop}
-                    onUpdateContent={handleUpdateContent}
-                    onResize={handleResize}
-                    onMoveLayer={handleMoveLayer}
-                    isTopLayer={
-                      index === (pages[currentPage]?.elements?.length ?? 0) - 1
-                    }
-                    isBottomLayer={index === 0}
-                    canvasWidth={width}
-                    canvasHeight={height}
-                  />
-                ))}
-            </div>
+              <div className="absolute inset-0 bg-white border border-gray-300 rounded-lg flex items-center justify-center">
+                Page {index + 1}
+              </div>
+            </button>
           ))}
+          <button
+            onClick={addNewPage}
+            className="aspect-[3/4] rounded-lg border-2 border-dashed border-gray-400 hover:border-black hover:bg-gray-50 flex items-center justify-center"
+          >
+            <span className="text-2xl">+</span>
+          </button>
+        </div>
+
+        {/* Main canvas area */}
+        <div
+          ref={containerRef}
+          className="relative bg-gray-50 flex-1 overflow-auto"
+        >
+          <div className="min-h-full min-w-full flex flex-col items-center justify-center p-8 gap-8">
+            {pages.map((page, pageIndex) => (
+              <div
+                key={page.id}
+                ref={(el) => {
+                  pageRefs.current[pageIndex] = el;
+                }}
+                className={`bg-white shadow-lg ${
+                  pageIndex !== currentPage ? "hidden" : ""
+                }`}
+                style={{
+                  width,
+                  height,
+                  transform: `scale(${scale})`,
+                  transformOrigin: "top",
+                  margin: `0px ${Math.max(((scale - 1) * width) / 2, 0)}px`,
+                  position: "relative",
+                }}
+              >
+                {page.elements
+                  .sort((a, b) => a.z_index - b.z_index)
+                  .map((element, index) => (
+                    <DraggableElement
+                      key={element.id}
+                      element={element}
+                      scale={scale}
+                      onDelete={handleDeleteElement}
+                      onDragStop={handleDragStop}
+                      onUpdateContent={handleUpdateContent}
+                      onResize={handleResize}
+                      onMoveLayer={handleMoveLayer}
+                      isTopLayer={
+                        index ===
+                        (pages[currentPage]?.elements?.length ?? 0) - 1
+                      }
+                      isBottomLayer={index === 0}
+                      canvasWidth={width}
+                      canvasHeight={height}
+                    />
+                  ))}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
