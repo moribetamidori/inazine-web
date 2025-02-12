@@ -9,6 +9,8 @@ import { TextEditorBubbleMenu } from "./TextEditorBubbleMenu";
 import { FontSize } from "@tiptap/extension-font-size";
 import TextStyle from "@tiptap/extension-text-style";
 import { Color } from "@tiptap/extension-color";
+import html2canvas from "html2canvas";
+import ZinePreview from "./ZinePreview";
 
 interface ZineCanvasProps {
   width?: number;
@@ -333,6 +335,9 @@ export default function ZineCanvas({
   const [currentPage, setCurrentPage] = useState(0);
   const [scale, setScale] = useState(0.5);
   const containerRef = useRef<HTMLDivElement>(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [previewPages, setPreviewPages] = useState<string[]>([]);
+  const pageRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   // Handle zoom with trackpad/mouse wheel
   const handleWheel = (e: WheelEvent) => {
@@ -500,6 +505,57 @@ export default function ZineCanvas({
     });
   };
 
+  const generatePreview = async () => {
+    const pageImages: string[] = [];
+    const tempPages = document.createElement("div");
+    tempPages.style.position = "absolute";
+    tempPages.style.left = "-9999px";
+    document.body.appendChild(tempPages);
+
+    try {
+      // Generate canvas for each page
+      for (let i = 0; i < pages.length; i++) {
+        const pageRef = pageRefs.current[i];
+        if (pageRef) {
+          const pageClone = pageRef.cloneNode(true) as HTMLElement;
+          pageClone.style.transform = "scale(1)";
+          pageClone.style.display = "block";
+          tempPages.appendChild(pageClone);
+
+          try {
+            const canvas = await html2canvas(pageClone, {
+              scale: 2,
+              useCORS: true,
+              backgroundColor: "white",
+              width: width,
+              height: height,
+            });
+            const imageUrl = canvas.toDataURL("image/png");
+            pageImages.push(imageUrl);
+
+            // // Debug: Show the generated image
+            // console.log(`Generated Page ${i + 1}:`, imageUrl);
+
+            // // Debug: Download the image
+            // const link = document.createElement("a");
+            // link.download = `zine-page-${i + 1}.png`;
+            // link.href = imageUrl;
+            // link.click();
+          } catch (error) {
+            console.error(`Error generating preview for page ${i + 1}:`, error);
+          }
+
+          tempPages.removeChild(pageClone);
+        }
+      }
+    } finally {
+      document.body.removeChild(tempPages);
+    }
+
+    setPreviewPages(pageImages);
+    setIsPreviewOpen(true);
+  };
+
   return (
     <div className="relative rounded-lg h-screen">
       <div className="flex justify-between bg-white">
@@ -540,6 +596,12 @@ export default function ZineCanvas({
           >
             Add Image
           </button>
+          <button
+            onClick={generatePreview}
+            className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700"
+          >
+            Preview
+          </button>
           <span className="ml-4 text-gray-500 mt-1">
             Scale: {Math.round(scale * 100)}%
           </span>
@@ -550,64 +612,81 @@ export default function ZineCanvas({
         className="relative bg-gray-50 h-[90vh] overflow-auto"
       >
         <div className="min-h-full min-w-full flex flex-col items-center justify-center p-8 gap-8">
-          <div
-            className="bg-white shadow-lg"
-            style={{
-              width,
-              height,
-              transform: `scale(${scale})`,
-              transformOrigin: "top",
-              margin: `0px ${Math.max(((scale - 1) * width) / 2, 0)}px`,
-              position: "relative",
-            }}
-          >
-            {pages[currentPage].elements
-              .sort((a, b) => a.zIndex - b.zIndex)
-              .map((element, index) => (
-                <DraggableElement
-                  key={element.id}
-                  element={element}
-                  scale={scale}
-                  onDelete={(id) => {
-                    setPages(
-                      pages.map((page, idx) =>
-                        idx === currentPage
-                          ? {
-                              ...page,
-                              elements: page.elements.filter(
-                                (el) => el.id !== id
-                              ),
-                            }
-                          : page
+          {pages.map((page, pageIndex) => (
+            <div
+              key={page.id}
+              ref={(el) => {
+                pageRefs.current[pageIndex] = el;
+              }}
+              className={`bg-white shadow-lg ${
+                pageIndex !== currentPage ? "hidden" : ""
+              }`}
+              style={{
+                width,
+                height,
+                transform: `scale(${scale})`,
+                transformOrigin: "top",
+                margin: `0px ${Math.max(((scale - 1) * width) / 2, 0)}px`,
+                position: "relative",
+              }}
+            >
+              {page.elements
+                .sort((a, b) => a.zIndex - b.zIndex)
+                .map((element, index) => (
+                  <DraggableElement
+                    key={element.id}
+                    element={element}
+                    scale={scale}
+                    onDelete={(id) => {
+                      setPages(
+                        pages.map((page, idx) =>
+                          idx === currentPage
+                            ? {
+                                ...page,
+                                elements: page.elements.filter(
+                                  (el) => el.id !== id
+                                ),
+                              }
+                            : page
+                        )
+                      );
+                    }}
+                    onDragStop={handleDragStop}
+                    onUpdateContent={(id, content) =>
+                      setPages(
+                        pages.map((page, idx) =>
+                          idx === currentPage
+                            ? {
+                                ...page,
+                                elements: page.elements.map((el) =>
+                                  el.id === id ? { ...el, content } : el
+                                ),
+                              }
+                            : page
+                        )
                       )
-                    );
-                  }}
-                  onDragStop={handleDragStop}
-                  onUpdateContent={(id, content) =>
-                    setPages(
-                      pages.map((page, idx) =>
-                        idx === currentPage
-                          ? {
-                              ...page,
-                              elements: page.elements.map((el) =>
-                                el.id === id ? { ...el, content } : el
-                              ),
-                            }
-                          : page
-                      )
-                    )
-                  }
-                  onResize={handleResize}
-                  onMoveLayer={handleMoveLayer}
-                  isTopLayer={index === pages[currentPage].elements.length - 1}
-                  isBottomLayer={index === 0}
-                  canvasWidth={width}
-                  canvasHeight={height}
-                />
-              ))}
-          </div>
+                    }
+                    onResize={handleResize}
+                    onMoveLayer={handleMoveLayer}
+                    isTopLayer={
+                      index === pages[currentPage].elements.length - 1
+                    }
+                    isBottomLayer={index === 0}
+                    canvasWidth={width}
+                    canvasHeight={height}
+                  />
+                ))}
+            </div>
+          ))}
         </div>
       </div>
+
+      {isPreviewOpen && (
+        <ZinePreview
+          pages={previewPages}
+          onClose={() => setIsPreviewOpen(false)}
+        />
+      )}
     </div>
   );
 }
