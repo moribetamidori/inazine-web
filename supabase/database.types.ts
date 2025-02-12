@@ -34,6 +34,88 @@ export type Database = {
   }
   public: {
     Tables: {
+      elements: {
+        Row: {
+          content: string
+          created_at: string
+          height: number | null
+          id: string
+          page_id: string
+          position_x: number
+          position_y: number
+          scale: number
+          type: string
+          updated_at: string
+          width: number | null
+          z_index: number
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          height?: number | null
+          id?: string
+          page_id: string
+          position_x: number
+          position_y: number
+          scale?: number
+          type: string
+          updated_at?: string
+          width?: number | null
+          z_index: number
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          height?: number | null
+          id?: string
+          page_id?: string
+          position_x?: number
+          position_y?: number
+          scale?: number
+          type?: string
+          updated_at?: string
+          width?: number | null
+          z_index?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "elements_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pages: {
+        Row: {
+          created_at: string
+          id: string
+          updated_at: string
+          zine_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          updated_at?: string
+          zine_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          updated_at?: string
+          zine_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pages_zine_id_fkey"
+            columns: ["zine_id"]
+            isOneToOne: false
+            referencedRelation: "zines"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       users: {
         Row: {
           created_at: string
