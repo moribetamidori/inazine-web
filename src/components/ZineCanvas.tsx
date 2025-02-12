@@ -13,6 +13,7 @@ import html2canvas from "html2canvas";
 import ZinePreview from "./ZinePreview";
 import { createPage, getPagesByZineId } from "@/lib/page";
 import { createElement, updateElement, deleteElement } from "@/lib/element";
+import { FontFamily } from '@tiptap/extension-font-family'
 
 interface ZineCanvasProps {
   width?: number;
@@ -76,6 +77,9 @@ function DraggableElement({
       }),
       Color.configure({
         types: ["textStyle"],
+      }),
+      FontFamily.configure({
+        types: ['textStyle'],
       }),
     ],
     content: element.content,
@@ -731,7 +735,7 @@ export default function ZineCanvas({
         <div className="p-2">
           <h1 className="text-2xl font-bold">{zine?.title}</h1>
         </div>
-        <div className="z-10 bg-white border-b p-2 flex gap-2">
+        <div className="z-10 bg-white border-b p-2 flex gap-2 items-center">
           <button
             onClick={addText}
             className="px-3 py-1 bg-black text-white rounded hover:bg-gray-800"
@@ -750,9 +754,19 @@ export default function ZineCanvas({
           >
             Preview
           </button>
-          <span className="ml-4 text-gray-500 mt-1">
-            Scale: {Math.round(scale * 100)}%
-          </span>
+          <div className="flex items-center gap-2 ml-4">
+            <input
+              type="range"
+              min="50"
+              max="100"
+              value={scale * 100}
+              onChange={(e) => setScale(Number(e.target.value) / 100)}
+              className="w-32 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+            />
+            <span className="text-gray-500 min-w-[80px]">
+              Scale: {Math.round(scale * 100)}%
+            </span>
+          </div>
         </div>
       </div>
       <div className="flex h-[90vh]">
