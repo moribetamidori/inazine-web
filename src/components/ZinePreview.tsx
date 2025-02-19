@@ -1,5 +1,6 @@
-import Image from "next/image";
-import { useRef, useEffect } from "react";
+import { useRef } from "react";
+import { useFlipbook } from "../hooks/useFlipbook";
+import ZinePage from "./ZinePage";
 
 interface PreviewProps {
   pages: string[];
@@ -8,47 +9,7 @@ interface PreviewProps {
 
 export default function ZinePreview({ pages, onClose }: PreviewProps) {
   const flipbookRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const element = flipbookRef.current;
-    const timer = setTimeout(() => {
-      if (element && window.$) {
-        const $flipbook = window.$(element);
-
-        // Initialize turn.js with specific options
-        $flipbook.turn({
-          width: 840,
-          height: 600,
-          autoCenter: true,
-          display: "double",
-          acceleration: true,
-          elevation: 50,
-          gradients: true,
-        });
-
-        // Show the flipbook after initialization
-        $flipbook.css({
-          visibility: "visible",
-          opacity: 1,
-        });
-      }
-    }, 100);
-
-    return () => {
-      clearTimeout(timer);
-      if (element && window.$) {
-        try {
-          const $flipbook = window.$(element);
-          if ($flipbook.data()?.turn) {
-            $flipbook.turn("destroy").remove();
-          }
-        } catch (error) {
-          console.log("Cleanup error:", error);
-        }
-      }
-    };
-  }, []);
-
+  useFlipbook(flipbookRef);
   if (pages.length === 0) return null;
 
   return (
@@ -75,45 +36,11 @@ export default function ZinePreview({ pages, onClose }: PreviewProps) {
               opacity: 0,
             }}
           >
-            {/* <div className="hard">
-              <div className="p-4">
-                <h1 className="text-2xl font-bold">Preview</h1>
-              </div>
-            </div> */}
             {pages.map((pageUrl, index) =>
               pageUrl ? (
-                <div key={index} className="page relative overflow-hidden">
-                  <Image
-                    src={pageUrl}
-                    alt={`Page ${index + 1}`}
-                    width={840}
-                    height={600}
-                    style={{
-                      width: "100%",
-                      height: "100%",
-                      objectFit: "cover",
-                      position: "absolute",
-                      top: 0,
-                      left: 0,
-                    }}
-                    priority={index === 0}
-                    onError={(e) => {
-                      console.error(
-                        `Failed to load image at index ${index}:`,
-                        pageUrl
-                      );
-                      (e.target as HTMLImageElement).src =
-                        "/placeholder-image.jpg";
-                    }}
-                  />
-                </div>
+                <ZinePage key={index} pageUrl={pageUrl} index={index} />
               ) : null
             )}
-            {/* <div className="hard">
-              <div className="p-4 text-center">
-                <p>End of preview</p>
-              </div>
-            </div> */}
           </div>
         </div>
       </div>
