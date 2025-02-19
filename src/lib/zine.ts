@@ -71,3 +71,13 @@ export async function deleteZine(zineId: string) {
 
   if (error) throw error;
 }
+//getpagesbyzineid
+export async function getPagesByZineId(zineId: string) {
+  const supabase = createClient();
+
+  const { data: pages, error } = await supabase.from("pages").select("*").eq("zine_id", zineId);
+
+  if (error) throw error;
+  return pages;
+}
+
