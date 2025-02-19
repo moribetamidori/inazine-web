@@ -69,11 +69,11 @@ export default function ZineBook({ pages }: ZineBookProps) {
                 src={pageUrl}
                 alt={`Page ${index + 1}`}
                 width={840}
-                height={1200}
+                height={600}
                 style={{
                   width: "100%",
                   height: "100%",
-                  objectFit: "contain",
+                  objectFit: "cover",
                 }}
                 priority={index === 0}
                 onError={(e) => {

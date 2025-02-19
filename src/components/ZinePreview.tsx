@@ -64,7 +64,7 @@ export default function ZinePreview({ pages, onClose }: PreviewProps) {
           </button>
         </div>
 
-        <div className="flex justify-center">
+        <div className="flex justify-center w-full">
           <div
             ref={flipbookRef}
             className="flipbook"
@@ -82,16 +82,19 @@ export default function ZinePreview({ pages, onClose }: PreviewProps) {
             </div> */}
             {pages.map((pageUrl, index) =>
               pageUrl ? (
-                <div key={index} className="page">
+                <div key={index} className="page relative overflow-hidden">
                   <Image
                     src={pageUrl}
                     alt={`Page ${index + 1}`}
                     width={840}
-                    height={1200}
+                    height={600}
                     style={{
                       width: "100%",
                       height: "100%",
-                      objectFit: "contain",
+                      objectFit: "cover",
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
                     }}
                     priority={index === 0}
                     onError={(e) => {
