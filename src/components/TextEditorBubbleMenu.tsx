@@ -1,14 +1,26 @@
 import { Editor, BubbleMenu } from "@tiptap/react";
 import { useState } from "react";
+
 interface TextEditorBubbleMenuProps {
   editor: Editor;
 }
+
+const FONT_FAMILIES = [
+  { label: "Inter", value: "Inter" },
+  { label: "Comic Sans", value: "Comic Sans MS, Comic Sans" },
+  { label: "Exo 2", value: "Exo 2" },
+  { label: "Serif", value: "serif" },
+  { label: "Monospace", value: "monospace" },
+  { label: "Cursive", value: "cursive" },
+];
 
 export function TextEditorBubbleMenu({ editor }: TextEditorBubbleMenuProps) {
   const [inputValue, setInputValue] = useState("16");
   const [fontSize, setFontSize] = useState("16");
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [currentColor, setCurrentColor] = useState("#000000");
+  const [currentFont, setCurrentFont] = useState("Inter");
+  const [showFontDropdown, setShowFontDropdown] = useState(false);
 
   const handleFontSizeChange = (size: string) => {
     const sizeNumber = parseInt(size);
@@ -23,6 +35,7 @@ export function TextEditorBubbleMenu({ editor }: TextEditorBubbleMenuProps) {
       handleFontSizeChange(inputValue);
     }
   };
+
 
   return (
     <BubbleMenu
@@ -50,14 +63,14 @@ export function TextEditorBubbleMenu({ editor }: TextEditorBubbleMenuProps) {
       >
         I
       </button>
-      <button
+      {/* <button
         onClick={() => editor.chain().focus().toggleStrike().run()}
         className={`px-2 py-1 rounded ${
           editor.isActive("strike") ? "bg-gray-200" : "hover:bg-gray-100"
         }`}
       >
         S
-      </button>
+      </button> */}
       <div className="relative">
         <button
           onClick={() => setShowColorPicker(!showColorPicker)}
@@ -84,6 +97,54 @@ export function TextEditorBubbleMenu({ editor }: TextEditorBubbleMenuProps) {
               className="w-8 h-8 cursor-pointer"
             />
           </div>
+        )}
+      </div>
+      <div className="relative">
+        <button
+          onClick={() => setShowFontDropdown(!showFontDropdown)}
+          className="border rounded px-2 py-1 text-sm flex items-center gap-1"
+          style={{ fontFamily: currentFont }}
+        >
+          {FONT_FAMILIES.find((f) => f.value === currentFont)?.label || "Font"}
+        </button>
+
+        {showFontDropdown && (
+          <>
+            <div
+              className="fixed inset-0"
+              onClick={() => setShowFontDropdown(false)}
+            />
+            <div className="absolute left-0 top-full mt-1 bg-white shadow-lg rounded-lg py-1 z-50 min-w-[150px]">
+              {FONT_FAMILIES.map((font) => (
+                <button
+                  key={font.value}
+                  onClick={() => {
+                    editor.chain().focus().setFontFamily(font.value).run();
+                    setCurrentFont(font.value);
+                    setShowFontDropdown(false);
+                  }}
+                  className={`w-full px-3 py-2 text-left hover:bg-gray-100 ${
+                    editor.isActive("textStyle", { fontFamily: font.value })
+                      ? "bg-gray-100"
+                      : ""
+                  }`}
+                  style={{ fontFamily: font.value }}
+                >
+                  {font.label}
+                </button>
+              ))}
+              <button
+                onClick={() => {
+                  editor.chain().focus().unsetFontFamily().run();
+                  setCurrentFont("");
+                  setShowFontDropdown(false);
+                }}
+                className="w-full px-3 py-2 text-left hover:bg-gray-100 border-t"
+              >
+                Unset Font
+              </button>
+            </div>
+          </>
         )}
       </div>
       <div className="relative flex items-center gap-1">

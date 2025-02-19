@@ -75,11 +75,11 @@ export default function ZinePreview({ pages, onClose }: PreviewProps) {
               opacity: 0,
             }}
           >
-            <div className="hard">
+            {/* <div className="hard">
               <div className="p-4">
                 <h1 className="text-2xl font-bold">Preview</h1>
               </div>
-            </div>
+            </div> */}
             {pages.map((pageUrl, index) =>
               pageUrl ? (
                 <div key={index} className="page">
@@ -106,11 +106,11 @@ export default function ZinePreview({ pages, onClose }: PreviewProps) {
                 </div>
               ) : null
             )}
-            <div className="hard">
+            {/* <div className="hard">
               <div className="p-4 text-center">
                 <p>End of preview</p>
               </div>
-            </div>
+            </div> */}
           </div>
         </div>
       </div>
