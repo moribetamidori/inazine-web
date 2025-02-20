@@ -1,12 +1,12 @@
 "use client";
 
 import AuthenticatedLayout from "@/components/AuthenticatedLayout";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase/client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { Database } from "../../../supabase/database.types";
 import { getPagesByZineId } from "@/lib/page";
-import Image from 'next/image';
+import Image from "next/image";
 
 type Zine = Database["public"]["Tables"]["zines"]["Row"] & {
   firstPagePreview?: string | null;
