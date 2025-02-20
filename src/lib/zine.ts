@@ -1,5 +1,6 @@
 import { createClient } from "./supabase/server";
 import { Database } from "../../supabase/database.types";
+import html2canvas from "html2canvas";
 
 type Zine = Database["public"]["Tables"]["zines"]["Row"];
 
@@ -79,5 +80,49 @@ export async function getPagesByZineId(zineId: string) {
 
   if (error) throw error;
   return pages;
+}
+
+export async function generatePreview(
+  pages: HTMLDivElement[],
+  width: number,
+  height: number
+): Promise<string[]> {
+  const pageImages: string[] = [];
+  const tempPages = document.createElement("div");
+  tempPages.style.position = "absolute";
+  tempPages.style.left = "-9999px";
+  document.body.appendChild(tempPages);
+
+  try {
+    for (let i = 0; i < pages.length; i++) {
+      const pageRef = pages[i];
+      if (pageRef) {
+        const pageClone = pageRef.cloneNode(true) as HTMLElement;
+        pageClone.style.transform = "scale(1)";
+        pageClone.style.display = "block";
+        tempPages.appendChild(pageClone);
+
+        try {
+          const canvas = await html2canvas(pageClone, {
+            scale: 2,
+            useCORS: true,
+            backgroundColor: "white",
+            width,
+            height,
+          });
+          const imageUrl = canvas.toDataURL("image/png");
+          pageImages.push(imageUrl);
+        } catch (error) {
+          console.error(`Error generating preview for page ${i + 1}:`, error);
+        }
+
+        tempPages.removeChild(pageClone);
+      }
+    }
+  } finally {
+    document.body.removeChild(tempPages);
+  }
+
+  return pageImages;
 }
 
