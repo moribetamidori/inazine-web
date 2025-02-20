@@ -36,7 +36,6 @@ export function TextEditorBubbleMenu({ editor }: TextEditorBubbleMenuProps) {
     }
   };
 
-
   return (
     <BubbleMenu
       editor={editor}
@@ -71,6 +70,41 @@ export function TextEditorBubbleMenu({ editor }: TextEditorBubbleMenuProps) {
       >
         S
       </button> */}
+      <div className="flex gap-1 border-l border-gray-200 pl-2">
+        <button
+          onClick={() => editor.chain().focus().setTextAlign("left").run()}
+          className={`px-2 py-1 rounded ${
+            editor.isActive({ textAlign: "left" })
+              ? "bg-gray-200"
+              : "hover:bg-gray-100"
+          }`}
+          title="Align Left"
+        >
+          ←
+        </button>
+        <button
+          onClick={() => editor.chain().focus().setTextAlign("center").run()}
+          className={`px-2 py-1 rounded ${
+            editor.isActive({ textAlign: "center" })
+              ? "bg-gray-200"
+              : "hover:bg-gray-100"
+          }`}
+          title="Align Center"
+        >
+          ↔
+        </button>
+        <button
+          onClick={() => editor.chain().focus().setTextAlign("right").run()}
+          className={`px-2 py-1 rounded ${
+            editor.isActive({ textAlign: "right" })
+              ? "bg-gray-200"
+              : "hover:bg-gray-100"
+          }`}
+          title="Align Right"
+        >
+          →
+        </button>
+      </div>
       <div className="relative">
         <button
           onClick={() => setShowColorPicker(!showColorPicker)}

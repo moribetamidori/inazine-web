@@ -14,6 +14,7 @@ import ZinePreview from "./ZinePreview";
 import { createPage, getPagesByZineId } from "@/lib/page";
 import { createElement, updateElement, deleteElement } from "@/lib/element";
 import { FontFamily } from '@tiptap/extension-font-family'
+import TextAlign from '@tiptap/extension-text-align'
 
 interface ZineCanvasProps {
   width?: number;
@@ -80,6 +81,10 @@ function DraggableElement({
       }),
       FontFamily.configure({
         types: ['textStyle'],
+      }),
+      TextAlign.configure({
+        types: ['heading', 'paragraph'],
+        alignments: ['left', 'center', 'right'],
       }),
     ],
     content: element.content,
