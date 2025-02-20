@@ -36,16 +36,25 @@ export default function ExploreZinePage() {
 
   return (
     <AuthenticatedLayout zineTitle={zine?.title}>
-      <div className="w-full h-screen flex justify-center items-center border border-red-500">
-        {loading ? (
-          <div className="flex items-center justify-center">
-            <div className="text-xl">Loading zine preview...</div>
+      <div className="flex flex-col min-h-screen p-4 w-full">
+        <div className="flex flex-col lg:flex-row lg:justify-center lg:w-9/12 mx-auto">
+          <div className="w-full flex justify-center">
+            {loading ? (
+              <div className="flex items-center justify-center">
+                <div className="text-xl">Loading zine preview...</div>
+              </div>
+            ) : (
+              <div
+                className="w-full"
+                style={{
+                  maxWidth: "840px",
+                }}
+              >
+                <ZineBook pages={previewPages} />
+              </div>
+            )}
           </div>
-        ) : (
-          <div className="flex justify-center items-center w-full">
-            <ZineBook pages={previewPages} />
-          </div>
-        )}
+        </div>
       </div>
     </AuthenticatedLayout>
   );
