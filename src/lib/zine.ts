@@ -85,6 +85,56 @@ export async function getPagesByZineId(zineId: string) {
   return pages;
 }
 
+export async function compressImage(
+  dataUrl: string,
+  maxSizeInMB: number = 0.5
+): Promise<string> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.src = dataUrl;
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      let width = img.width;
+      let height = img.height;
+
+      // Calculate aspect ratio
+      const aspectRatio = width / height;
+
+      // More aggressive size reduction
+      const maxWidth = 800;
+      const maxHeight = 1067;
+
+      if (width > maxWidth) {
+        width = maxWidth;
+        height = width / aspectRatio;
+      }
+
+      if (height > maxHeight) {
+        height = maxHeight;
+        width = height * aspectRatio;
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+
+      const ctx = canvas.getContext("2d")!;
+      ctx.drawImage(img, 0, 0, width, height);
+
+      // Start with lower quality
+      let quality = 0.5;
+      let compressed = canvas.toDataURL("image/jpeg", quality);
+
+      // If still too large, reduce quality until under maxSize
+      while (compressed.length > maxSizeInMB * 1024 * 1024 && quality > 0.1) {
+        quality -= 0.05;
+        compressed = canvas.toDataURL("image/jpeg", quality);
+      }
+
+      resolve(compressed);
+    };
+  });
+}
+
 export async function generatePreview(
   pages: HTMLDivElement[],
   width: number,
@@ -120,15 +170,27 @@ export async function generatePreview(
 
         try {
           const canvas = await html2canvas(pageClone, {
-            scale: 2,
+            scale: 1.5,
             useCORS: true,
             backgroundColor: "white",
             width,
             height,
           });
-          const imageUrl = canvas.toDataURL("image/png");
-          console.log("Image URL:", imageUrl);
-          pageImages.push(imageUrl);
+          const initialImageUrl = canvas.toDataURL("image/jpeg", 0.8);
+          console.log(
+            "Initial Image Size:",
+            Math.round((initialImageUrl.length / 1024 / 1024) * 100) / 100,
+            "MB"
+          );
+
+          const compressedImageUrl = await compressImage(initialImageUrl);
+          console.log(
+            "Compressed Image Size:",
+            Math.round((compressedImageUrl.length / 1024 / 1024) * 100) / 100,
+            "MB"
+          );
+
+          pageImages.push(compressedImageUrl);
 
           // Save preview to database if requested
           if (saveToDb && pageIds[i]) {
@@ -136,7 +198,7 @@ export async function generatePreview(
             const supabase = createClient();
             await supabase
               .from("pages")
-              .update({ preview: imageUrl })
+              .update({ preview: compressedImageUrl })
               .eq("id", pageIds[i]);
             console.log("Preview saved to database");
           }
