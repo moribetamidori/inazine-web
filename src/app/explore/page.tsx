@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { Database } from "../../../supabase/database.types";
 import { getPagesByZineId } from "@/lib/page";
+import Image from 'next/image';
 
 type Zine = Database["public"]["Tables"]["zines"]["Row"] & {
   firstPagePreview?: string | null;
@@ -71,10 +72,12 @@ export default function ExplorePage() {
                 <div className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow border overflow-hidden">
                   <div className="aspect-[3/4] relative bg-gray-100">
                     {zine.firstPagePreview ? (
-                      <img
+                      <Image
                         src={zine.firstPagePreview}
                         alt={zine.title}
-                        className="w-full h-full object-contain"
+                        fill
+                        className="object-contain"
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-gray-400">
