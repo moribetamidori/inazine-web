@@ -21,7 +21,7 @@ export default function ExploreZinePage() {
         if (zine) {
           setZine(zine);
           const pages = await getPagesByZineId(zine.id);
-          const previews = pages.map(page => page.preview || '');
+          const previews = pages.map((page) => page.preview || "");
           setPreviewPages(previews);
         }
       } catch (error) {
@@ -36,13 +36,15 @@ export default function ExploreZinePage() {
 
   return (
     <AuthenticatedLayout zineTitle={zine?.title}>
-      <div className="relative rounded-lg h-screen">
+      <div className="w-full h-screen flex justify-center items-center border border-red-500">
         {loading ? (
-          <div className="flex items-center justify-center h-screen">
+          <div className="flex items-center justify-center">
             <div className="text-xl">Loading zine preview...</div>
           </div>
         ) : (
-          <ZineBook pages={previewPages} />
+          <div className="flex justify-center items-center w-full">
+            <ZineBook pages={previewPages} />
+          </div>
         )}
       </div>
     </AuthenticatedLayout>

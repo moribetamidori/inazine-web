@@ -31,7 +31,7 @@ export default function ZinePreview({ pages, onClose }: PreviewProps) {
             className="flipbook"
             style={{
               width: "840px",
-              height: "600px",
+              height: "1120px",
               visibility: "hidden",
               opacity: 0,
             }}
