@@ -6,12 +6,13 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { Database } from "../../../supabase/database.types";
 import { getPagesByZineId } from "@/lib/page";
-import html2canvas from "html2canvas";
 
-type Zine = Database["public"]["Tables"]["zines"]["Row"];
+type Zine = Database["public"]["Tables"]["zines"]["Row"] & {
+  firstPagePreview?: string | null;
+};
 
 export default function ExplorePage() {
-  const [zines, setZines] = useState<(Zine & { preview?: string })[]>([]);
+  const [zines, setZines] = useState<Zine[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -21,68 +22,19 @@ export default function ExplorePage() {
         const { data, error } = await supabase
           .from("zines")
           .select(`*`)
-          .order("created_at", { ascending: false });
+          .order("created_at", { ascending: true });
         if (error) throw error;
-        setZines(data);
 
-        // Generate previews for each zine
-        for (const zine of data) {
-          const pages = await getPagesByZineId(zine.id);
-          if (pages && pages.length > 0) {
-            const firstPage = pages[0];
+        // Fetch first page preview for each zine
+        const zinesWithPreviews = await Promise.all(
+          data.map(async (zine) => {
+            const pages = await getPagesByZineId(zine.id);
+            const firstPagePreview = pages?.[0]?.preview || null;
+            return { ...zine, firstPagePreview };
+          })
+        );
 
-            // Create a temporary div to render the page
-            const tempDiv = document.createElement("div");
-            tempDiv.style.position = "absolute";
-            tempDiv.style.left = "-9999px";
-            tempDiv.style.width = "900px"; // Match ZineCanvas width
-            tempDiv.style.height = "1200px"; // Match ZineCanvas height
-            tempDiv.style.backgroundColor = "white";
-            document.body.appendChild(tempDiv);
-
-            // Render the page elements
-            firstPage.elements.forEach((element) => {
-              const elementDiv = document.createElement("div");
-              elementDiv.style.position = "absolute";
-              elementDiv.style.left = `${element.position_x}px`;
-              elementDiv.style.top = `${element.position_y}px`;
-              elementDiv.style.zIndex = element.z_index.toString();
-
-              if (element.type === "text") {
-                elementDiv.innerHTML = element.content;
-              } else if (element.type === "image") {
-                const img = document.createElement("img");
-                img.src = element.content;
-                img.style.width = element.width ? `${element.width}px` : "auto";
-                img.style.height = element.height
-                  ? `${element.height}px`
-                  : "auto";
-                elementDiv.appendChild(img);
-              }
-
-              tempDiv.appendChild(elementDiv);
-            });
-
-            try {
-              const canvas = await html2canvas(tempDiv, {
-                width: 900,
-                height: 1200,
-                scale: 1,
-                useCORS: true,
-                backgroundColor: "white",
-              });
-
-              const preview = canvas.toDataURL("image/png", 0.8);
-              setZines((prevZines) =>
-                prevZines.map((z) => (z.id === zine.id ? { ...z, preview } : z))
-              );
-            } catch (error) {
-              console.error("Error generating preview:", error);
-            }
-
-            document.body.removeChild(tempDiv);
-          }
-        }
+        setZines(zinesWithPreviews);
       } catch (error) {
         console.error("Error fetching public zines:", error);
       } finally {
@@ -118,9 +70,9 @@ export default function ExplorePage() {
               >
                 <div className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow border overflow-hidden">
                   <div className="aspect-[3/4] relative bg-gray-100">
-                    {zine.preview ? (
+                    {zine.firstPagePreview ? (
                       <img
-                        src={zine.preview}
+                        src={zine.firstPagePreview}
                         alt={zine.title}
                         className="w-full h-full object-contain"
                       />

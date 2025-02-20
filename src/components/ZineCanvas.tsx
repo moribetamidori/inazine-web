@@ -119,7 +119,12 @@ export default function ZineCanvas({
     const filteredRefs = pageRefs.current.filter(
       (ref): ref is HTMLDivElement => ref !== null
     );
-    const images = await generateZinePreview(filteredRefs, width, height);
+    const images = await generateZinePreview(
+      filteredRefs,
+      width,
+      height,
+      zine?.id ?? ""
+    );
     setPreviewPages(images);
     setIsPreviewOpen(true);
   };

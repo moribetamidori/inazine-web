@@ -7,19 +7,28 @@ interface ZinePageProps {
 
 export default function ZinePage({ pageUrl, index }: ZinePageProps) {
   return (
-    <div className="page relative overflow-hidden">
+    <div
+      className="page"
+      style={{
+        position: "relative",
+        width: "100%",
+        height: "100%",
+        overflow: "hidden",
+        backgroundColor: "white",
+      }}
+    >
       <Image
         src={pageUrl}
         alt={`Page ${index + 1}`}
-        width={840}
-        height={600}
+        fill
+        sizes="100%"
         style={{
-          width: "100%",
-          height: "100%",
-          objectFit: "cover",
+          objectFit: "contain",
           position: "absolute",
           top: 0,
           left: 0,
+          width: "100%",
+          height: "100%",
         }}
         priority={index === 0}
         onError={(e) => {

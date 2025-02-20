@@ -91,18 +91,21 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          preview: string | null
           updated_at: string
           zine_id: string
         }
         Insert: {
           created_at?: string
           id?: string
+          preview?: string | null
           updated_at?: string
           zine_id: string
         }
         Update: {
           created_at?: string
           id?: string
+          preview?: string | null
           updated_at?: string
           zine_id?: string
         }

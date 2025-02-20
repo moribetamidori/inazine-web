@@ -5,6 +5,7 @@ export type Zine = Database["public"]["Tables"]["zines"]["Row"];
 export interface Page {
   id: string;
   zine_id: string;
+  preview: string | null;
   created_at?: string;
   updated_at?: string;
   elements: Element[];

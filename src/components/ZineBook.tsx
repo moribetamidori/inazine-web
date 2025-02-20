@@ -1,19 +1,18 @@
 import { useRef } from "react";
 import { useFlipbook } from "../hooks/useFlipbook";
-import ZinePage from "@/components/ZinePage";
+import ZinePage from "./ZinePage";
 
-interface ZineBookProps {
+interface PreviewProps {
   pages: string[];
 }
 
-export default function ZineBook({ pages }: ZineBookProps) {
+export default function ZineBook({ pages }: PreviewProps) {
   const flipbookRef = useRef<HTMLDivElement>(null);
   useFlipbook(flipbookRef);
-
   if (pages.length === 0) return null;
 
   return (
-    <div className="flex justify-center">
+    <div className="flex justify-center w-full">
       <div
         ref={flipbookRef}
         className="flipbook"
