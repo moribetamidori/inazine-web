@@ -2,12 +2,13 @@
 
 import AuthenticatedLayout from "@/components/AuthenticatedLayout";
 import { useAuth } from "@/contexts/AuthContext";
-import { getZinesByUserId, getPagesByZineId } from "@/lib/zine";
+import { getZinesByUserId } from "@/lib/zine";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import type { Database } from "../../../../supabase/database.types";
 import Image from "next/image";
+import { getCoverByZineId } from "@/lib/page";
 
 type Zine = Database["public"]["Tables"]["zines"]["Row"] & {
   firstPagePreview?: string | null;
@@ -28,8 +29,7 @@ export default function ProfilePage() {
         // Fetch first page preview for each zine
         const zinesWithPreviews = await Promise.all(
           userZines.map(async (zine) => {
-            const pages = await getPagesByZineId(zine.id);
-            const firstPagePreview = pages?.[0]?.preview || null;
+            const firstPagePreview = await getCoverByZineId(zine.id);
             return { ...zine, firstPagePreview };
           })
         );

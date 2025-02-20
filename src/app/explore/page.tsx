@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { Database } from "../../../supabase/database.types";
-import { getPagesByZineId } from "@/lib/page";
+import { getCoverByZineId } from "@/lib/page";
 import Image from "next/image";
 
 type Zine = Database["public"]["Tables"]["zines"]["Row"] & {
@@ -29,8 +29,7 @@ export default function ExplorePage() {
         // Fetch first page preview for each zine
         const zinesWithPreviews = await Promise.all(
           data.map(async (zine) => {
-            const pages = await getPagesByZineId(zine.id);
-            const firstPagePreview = pages?.[0]?.preview || null;
+            const firstPagePreview = await getCoverByZineId(zine.id);
             return { ...zine, firstPagePreview };
           })
         );

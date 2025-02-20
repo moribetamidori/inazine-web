@@ -65,3 +65,18 @@ export async function deletePage(pageId: string) {
 
   if (error) throw error;
 }
+
+export async function getCoverByZineId(zineId: string) {
+  const supabase = createClient();
+
+  const { data: coverPage, error } = await supabase
+    .from("pages")
+    .select("preview")
+    .eq("zine_id", zineId)
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .single();
+
+  if (error) throw error;
+  return coverPage?.preview || null;
+}
