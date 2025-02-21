@@ -28,6 +28,7 @@ interface DraggableElementProps {
   isTopLayer: boolean;
   isBottomLayer: boolean;
   onUpdateFilter: (id: string, filter: string) => void;
+  onCopy: () => void;
 }
 
 export function DraggableElement({
@@ -43,6 +44,7 @@ export function DraggableElement({
   isTopLayer,
   isBottomLayer,
   onUpdateFilter,
+  onCopy,
 }: DraggableElementProps) {
   const nodeRef = useRef<HTMLDivElement>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -169,6 +171,12 @@ export function DraggableElement({
               >
                 Delete
               </button>
+              <button
+                onClick={onCopy}
+                className="text-blue-500 hover:text-blue-700"
+              >
+                Copy
+              </button>
             </div>
 
             <div className="min-w-[100px] p-2 relative">
@@ -202,6 +210,12 @@ export function DraggableElement({
                 className="text-red-500 hover:text-red-700"
               >
                 Delete
+              </button>
+              <button
+                onClick={onCopy}
+                className="text-blue-500 hover:text-blue-700"
+              >
+                Copy
               </button>
             </div>
             {imageDimensions.width > 0 && (

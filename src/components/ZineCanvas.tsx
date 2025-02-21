@@ -15,6 +15,8 @@ import {
 import { useZinePages } from "@/hooks/useZinePages";
 import { DraggableElement } from "./DraggableElement";
 import { generatePreview as generateZinePreview } from "@/lib/zine";
+import { Element } from "@/types/zine";
+import { createElement } from "@/lib/element";
 
 interface ZineCanvasProps {
   width?: number;
@@ -34,6 +36,7 @@ export default function ZineCanvas({
   const pageRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [previewPages, setPreviewPages] = useState<string[]>([]);
+  const [copiedElement, setCopiedElement] = useState<Element | null>(null);
 
   // Handle zoom with trackpad/mouse wheel
   const handleWheel = (e: WheelEvent) => {
@@ -131,7 +134,6 @@ export default function ZineCanvas({
       (ref): ref is HTMLDivElement => ref !== null
     );
 
-
     const images = await generateZinePreview(
       filteredRefs,
       width,
@@ -149,6 +151,73 @@ export default function ZineCanvas({
     setPreviewPages(images);
     setIsPreviewOpen(true);
   };
+
+  const handleCopy = (element: Element) => {
+    setCopiedElement(element);
+  };
+
+  const handlePaste = async () => {
+    if (!copiedElement || !pages[currentPage]?.id) return;
+
+    const newElement = {
+      ...copiedElement,
+      id: `copy-${Date.now()}`,
+      position_x: copiedElement.position_x + 10,
+      position_y: copiedElement.position_y + 10,
+    };
+
+    try {
+      // Create a new element in the database
+      const createdElement = await createElement({
+        page_id: pages[currentPage].id,
+        type: newElement.type,
+        content: newElement.content,
+        position_x: newElement.position_x,
+        position_y: newElement.position_y,
+        width: newElement.width,
+        height: newElement.height,
+        scale: newElement.scale,
+        z_index: pages[currentPage].elements.length + 1,
+        filter: newElement.filter,
+      });
+
+      // Ensure the type is correctly cast
+      const typedElement: Element = {
+        ...createdElement,
+        type: createdElement.type as "text" | "image",
+        filter: createdElement.filter as string,
+      };
+
+      // Update the local state with the new element
+      setPages(
+        pages.map((page, index) =>
+          index === currentPage
+            ? { ...page, elements: [...page.elements, typedElement] }
+            : page
+        )
+      );
+    } catch (error) {
+      console.error("Error pasting element:", error);
+    }
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "c" && copiedElement) {
+        e.preventDefault();
+        handleCopy(copiedElement);
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key === "v") {
+        e.preventDefault();
+        handlePaste();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [copiedElement, pages, currentPage]);
 
   return (
     <div className="relative rounded-lg h-screen">
@@ -283,6 +352,7 @@ export default function ZineCanvas({
                           setPages
                         )
                       }
+                      onCopy={() => handleCopy(element)}
                     />
                   ))}
               </div>
