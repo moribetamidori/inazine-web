@@ -131,6 +131,7 @@ export default function ZineCanvas({
       (ref): ref is HTMLDivElement => ref !== null
     );
 
+
     const images = await generateZinePreview(
       filteredRefs,
       width,

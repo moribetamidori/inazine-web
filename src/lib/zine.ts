@@ -167,54 +167,25 @@ export async function generatePreview(
         pageClone.style.transform = "scale(1)";
         pageClone.style.display = "block";
 
-        // Add inline styles to prevent CORS issues
-        const computedStyle = window.getComputedStyle(pageRef);
-        pageClone.style.cssText = Array.from(computedStyle).reduce(
-          (str, property) => {
-            return `${str} ${property}: ${computedStyle.getPropertyValue(
-              property
-            )};`;
-          },
-          ""
-        );
-
         tempPages.appendChild(pageClone);
 
         try {
-          const initialImageUrl = await domToJpeg(pageClone, {
+          const imageUrl = await domToJpeg(pageClone, {
             quality: 0.8,
             width,
             height,
             backgroundColor: "#ffffff",
-            style: {
-              transform: "none",
-              transformOrigin: "center",
-            },
           });
-          console.log(
-            "Initial Image Size:",
-            Math.round((initialImageUrl.length / 1024 / 1024) * 100) / 100,
-            "MB"
-          );
 
-          const compressedImageUrl = await compressImage(initialImageUrl);
-          console.log(
-            "Compressed Image Size:",
-            Math.round((compressedImageUrl.length / 1024 / 1024) * 100) / 100,
-            "MB"
-          );
-
-          pageImages.push(compressedImageUrl);
+          pageImages.push(imageUrl);
 
           // Save preview to database if requested
           if (saveToDb && pageIds[i]) {
-            console.log(`Saving preview for page ID: ${pageIds[i]}`);
             const supabase = createClient();
             await supabase
               .from("pages")
-              .update({ preview: compressedImageUrl })
+              .update({ preview: imageUrl })
               .eq("id", pageIds[i]);
-            console.log("Preview saved to database");
           }
         } catch (error) {
           console.error(`Error generating preview for page ${i + 1}:`, error);
