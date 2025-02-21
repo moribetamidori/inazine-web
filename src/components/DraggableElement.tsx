@@ -7,6 +7,7 @@ import { EditorContent } from "@tiptap/react";
 import { TextEditorBubbleMenu } from "./TextEditorBubbleMenu";
 import { handleImageResize } from "@/lib/element";
 import { useZineEditor } from "@/hooks/useZineEditor";
+import { ImageFilterMenu } from "./ImageFilterMenu";
 
 interface DraggableElementProps {
   element: Element;
@@ -26,6 +27,7 @@ interface DraggableElementProps {
   canvasHeight: number;
   isTopLayer: boolean;
   isBottomLayer: boolean;
+  onUpdateFilter: (id: string, filter: string) => void;
 }
 
 export function DraggableElement({
@@ -40,6 +42,7 @@ export function DraggableElement({
   canvasHeight,
   isTopLayer,
   isBottomLayer,
+  onUpdateFilter,
 }: DraggableElementProps) {
   const nodeRef = useRef<HTMLDivElement>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -203,14 +206,21 @@ export function DraggableElement({
             </div>
             {imageDimensions.width > 0 && (
               <>
-                <Image
-                  src={element.content}
-                  alt="User uploaded"
-                  width={element.width || imageDimensions.width}
-                  height={element.height || imageDimensions.height}
-                  className="object-contain"
-                  style={{ pointerEvents: "none" }}
-                />
+                <div
+                  className={`relative ${
+                    element.filter ? `filter-${element.filter}` : ""
+                  }`}
+                  onClick={handleDoubleClick}
+                >
+                  <Image
+                    src={element.content}
+                    alt="User uploaded"
+                    width={element.width || imageDimensions.width}
+                    height={element.height || imageDimensions.height}
+                    className="object-contain"
+                    style={{ pointerEvents: "none" }}
+                  />
+                </div>
                 {isResizing && (
                   <>
                     <div
@@ -238,6 +248,14 @@ export function DraggableElement({
                       }
                     />
                   </>
+                )}
+                {!isResizing && element.type === "image" && (
+                  <ImageFilterMenu
+                    currentFilter={element.filter || "none"}
+                    onFilterChange={(filter) =>
+                      onUpdateFilter(element.id, filter)
+                    }
+                  />
                 )}
               </>
             )}

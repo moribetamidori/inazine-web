@@ -10,6 +10,7 @@ import {
   handleMoveLayer,
   addText as addTextElement,
   addImage as addImageElement,
+  handleUpdateFilter,
 } from "@/lib/element";
 import { useZinePages } from "@/hooks/useZinePages";
 import { DraggableElement } from "./DraggableElement";
@@ -253,6 +254,9 @@ export default function ZineCanvas({
                       isBottomLayer={index === 0}
                       canvasWidth={width}
                       canvasHeight={height}
+                      onUpdateFilter={(id, filter) =>
+                        handleUpdateFilter(id, filter, pages, currentPage, setPages)
+                      }
                     />
                   ))}
               </div>
