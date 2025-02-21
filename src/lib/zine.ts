@@ -1,6 +1,6 @@
 import { createClient } from "./supabase/server";
 import { Database } from "../../supabase/database.types";
-import html2canvas from "html2canvas";
+import { domToJpeg } from "modern-screenshot";
 
 type Zine = Database["public"]["Tables"]["zines"]["Row"];
 
@@ -166,17 +166,31 @@ export async function generatePreview(
         const pageClone = pageRef.cloneNode(true) as HTMLElement;
         pageClone.style.transform = "scale(1)";
         pageClone.style.display = "block";
+
+        // Add inline styles to prevent CORS issues
+        const computedStyle = window.getComputedStyle(pageRef);
+        pageClone.style.cssText = Array.from(computedStyle).reduce(
+          (str, property) => {
+            return `${str} ${property}: ${computedStyle.getPropertyValue(
+              property
+            )};`;
+          },
+          ""
+        );
+
         tempPages.appendChild(pageClone);
 
         try {
-          const canvas = await html2canvas(pageClone, {
-            scale: 1.5,
-            useCORS: true,
-            backgroundColor: "white",
+          const initialImageUrl = await domToJpeg(pageClone, {
+            quality: 0.8,
             width,
             height,
+            backgroundColor: "#ffffff",
+            style: {
+              transform: "none",
+              transformOrigin: "center",
+            },
           });
-          const initialImageUrl = canvas.toDataURL("image/jpeg", 0.8);
           console.log(
             "Initial Image Size:",
             Math.round((initialImageUrl.length / 1024 / 1024) * 100) / 100,

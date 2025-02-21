@@ -62,6 +62,9 @@ importers:
       framer-motion:
         specifier: ^12.0.11
         version: 12.0.11(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
+      html-to-image:
+        specifier: ^1.11.13
+        version: 1.11.13
       html2canvas:
         specifier: ^1.4.1
         version: 1.4.1
@@ -74,6 +77,9 @@ importers:
       maath:
         specifier: ^0.10.8
         version: 0.10.8(@types/three@0.173.0)(three@0.173.0)
+      modern-screenshot:
+        specifier: ^4.6.0
+        version: 4.6.0
       next:
         specifier: 15.1.6
         version: 15.1.6(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
@@ -1613,6 +1619,9 @@ packages:
   hls.js@1.5.20:
     resolution: {integrity: sha512-uu0VXUK52JhihhnN/MVVo1lvqNNuhoxkonqgO3IpjvQiGpJBdIXMGkofjQb/j9zvV7a1SW8U9g1FslWx/1HOiQ==}
 
+  html-to-image@1.11.13:
+    resolution: {integrity: sha512-cuOPoI7WApyhBElTTb9oqsawRvZ0rHhaHwghRLlTuffoD1B2aDemlCruLeZrUIIdvG7gs9xeELEPm6PhuASqrg==}
+
   html2canvas@1.4.1:
     resolution: {integrity: sha512-fPU6BHNpsyIhr8yyMpTLLxAbkaK8ArIBcmZIRiBLiDhjeqvXolaEmDGmELFuX9I4xDcaKKcJl+TKZLqruBbmWA==}
     engines: {node: '>=8.0.0'}
@@ -1921,6 +1930,9 @@ packages:
     resolution: {integrity: sha512-+NsyUUAZDmo6YVHzL/stxSu3t9YS1iljliy3BSDrXJ/dkn1KYdmtZODGGjLcc9XLgVVpH4KshHB8XmZgMhaBXg==}
     engines: {node: '>=10'}
     hasBin: true
+
+  modern-screenshot@4.6.0:
+    resolution: {integrity: sha512-L7osQAWpJiWY1ST1elhLRSGD5i7og5uoICqiXs38whAjWtIayp3cBMJmyML4iyJcBhRfHOyciq1g1Ft5G0QvSg==}
 
   motion-dom@12.0.0:
     resolution: {integrity: sha512-CvYd15OeIR6kHgMdonCc1ihsaUG4MYh/wrkz8gZ3hBX/uamyZCXN9S9qJoYF03GqfTt7thTV/dxnHYX4+55vDg==}
@@ -4501,6 +4513,8 @@ snapshots:
 
   hls.js@1.5.20: {}
 
+  html-to-image@1.11.13: {}
+
   html2canvas@1.4.1:
     dependencies:
       css-line-break: 2.1.0
@@ -4804,6 +4818,8 @@ snapshots:
       rimraf: 5.0.10
 
   mkdirp@3.0.1: {}
+
+  modern-screenshot@4.6.0: {}
 
   motion-dom@12.0.0:
     dependencies:
