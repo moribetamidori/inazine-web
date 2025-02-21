@@ -117,15 +117,34 @@ export default function ZineCanvas({
   };
 
   const generatePreview = async () => {
+    // Temporarily show all pages
+    const currentHiddenPages = pageRefs.current.map((ref) => {
+      if (ref) {
+        const wasHidden = ref.classList.contains("hidden");
+        ref.classList.remove("hidden");
+        return wasHidden;
+      }
+      return false;
+    });
+
     const filteredRefs = pageRefs.current.filter(
       (ref): ref is HTMLDivElement => ref !== null
     );
+
     const images = await generateZinePreview(
       filteredRefs,
       width,
       height,
       zine?.id ?? ""
     );
+
+    // Restore hidden state
+    pageRefs.current.forEach((ref, index) => {
+      if (ref && currentHiddenPages[index]) {
+        ref.classList.add("hidden");
+      }
+    });
+
     setPreviewPages(images);
     setIsPreviewOpen(true);
   };
