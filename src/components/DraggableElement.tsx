@@ -249,7 +249,7 @@ export function DraggableElement({
                     />
                   </>
                 )}
-                {!isResizing && element.type === "image" && (
+                {isResizing && element.type === "image" && (
                   <ImageFilterMenu
                     currentFilter={element.filter || "none"}
                     onFilterChange={(filter) =>

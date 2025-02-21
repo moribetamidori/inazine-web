@@ -255,7 +255,13 @@ export default function ZineCanvas({
                       canvasWidth={width}
                       canvasHeight={height}
                       onUpdateFilter={(id, filter) =>
-                        handleUpdateFilter(id, filter, pages, currentPage, setPages)
+                        handleUpdateFilter(
+                          id,
+                          filter,
+                          pages,
+                          currentPage,
+                          setPages
+                        )
                       }
                     />
                   ))}
