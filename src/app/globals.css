@@ -149,9 +149,8 @@ select option {
 
 .filter-nostalgia {
   position: relative;
-  filter: brightness(1.15) contrast(1.3) saturate(1.4) sepia(0.35) opacity(0.95) hue-rotate(-30deg) brightness(1.05) blur(0.3px);
+  filter: brightness(1.15) contrast(1.3) saturate(1.4) sepia(0.35) opacity(0.95) hue-rotate(var(--tint-hue, 0deg)) brightness(1.05) blur(0.3px);
 }
-
 .filter-nostalgia::after {
   content: '';
   position: absolute;
@@ -159,7 +158,7 @@ select option {
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(128, 0, 128, 0.3);
+  background-color: rgba(176, 19, 255, 0.27);
   /* Adjust the alpha for more/less tint */
   pointer-events: none;
   mix-blend-mode: multiply;
