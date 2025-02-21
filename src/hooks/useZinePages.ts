@@ -17,6 +17,7 @@ export function useZinePages(zineId: string | undefined) {
             elements: page.elements.map((el) => ({
               ...el,
               type: el.type as "text" | "image",
+              filter: el.filter || "",
             })),
           }))
         );
