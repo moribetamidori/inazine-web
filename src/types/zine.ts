@@ -24,4 +24,5 @@ export interface Element {
   z_index: number;
   created_at?: string;
   updated_at?: string;
+  filter: string;
 }

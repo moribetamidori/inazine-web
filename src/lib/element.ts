@@ -376,6 +376,7 @@ export async function addText(
       z_index: pages[currentPage].elements.length + 1,
       width: null,
       height: null,
+      filter: "none",
     });
 
     setPages(
@@ -385,7 +386,7 @@ export async function addText(
               ...page,
               elements: [
                 ...page.elements,
-                { ...newElement, type: newElement.type as "text" | "image" },
+                { ...newElement, type: newElement.type as "text" | "image", filter: "none" },
               ],
             }
           : page
@@ -426,6 +427,7 @@ export async function addImage(
               z_index: pages[currentPage].elements.length + 1,
               width: null,
               height: null,
+              filter: "none",
             });
 
             setPages(
@@ -438,6 +440,7 @@ export async function addImage(
                         {
                           ...newElement,
                           type: newElement.type as "text" | "image",
+                          filter: "none",
                         },
                       ],
                     }
@@ -457,4 +460,34 @@ export async function addImage(
     };
     input.click();
   });
+}
+
+
+export async function handleUpdateFilter(
+  id: string,
+  filter: string,
+  pages: Page[],
+  currentPage: number,
+  setPages: (pages: Page[]) => void
+) {
+  // Update local state first
+  setPages(
+    pages.map((page, index) =>
+      index === currentPage
+        ? {
+            ...page,
+            elements: page.elements.map((el) =>
+              el.id === id ? { ...el, filter } : el
+            ),
+          }
+        : page
+    )
+  );
+
+  // Update database
+  try {
+    await updateElement(id, { filter });
+  } catch (error) {
+    console.error("Error updating element filter:", error);
+  }
 }

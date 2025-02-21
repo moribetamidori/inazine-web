@@ -38,6 +38,7 @@ export type Database = {
         Row: {
           content: string
           created_at: string
+          filter: string | null
           height: number | null
           id: string
           page_id: string
@@ -52,6 +53,7 @@ export type Database = {
         Insert: {
           content: string
           created_at?: string
+          filter?: string | null
           height?: number | null
           id?: string
           page_id: string
@@ -66,6 +68,7 @@ export type Database = {
         Update: {
           content?: string
           created_at?: string
+          filter?: string | null
           height?: number | null
           id?: string
           page_id?: string
