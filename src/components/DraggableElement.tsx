@@ -179,7 +179,7 @@ export function DraggableElement({
               </button>
             </div>
 
-            <div className="min-w-[100px] p-2 relative">
+            <div className="min-w-[100px] p-2 relative text-[28px]">
               <EditorContent editor={editor} />
               {editor && <TextEditorBubbleMenu editor={editor} />}
             </div>
