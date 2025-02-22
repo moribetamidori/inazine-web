@@ -42,6 +42,15 @@ export default function ZineCanvas({
   const [currentFilter, setCurrentFilter] = useState<string>("none");
   const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
 
+  // Add logging for page changes
+  useEffect(() => {
+    console.log("Current page changed:", {
+      currentPage,
+      totalPages: pages.length,
+      visiblePageId: pages[currentPage]?.id,
+    });
+  }, [currentPage, pages]);
+
   // Handle zoom with trackpad/mouse wheel
   const handleWheel = (e: WheelEvent) => {
     if (e.ctrlKey || e.metaKey) {
@@ -262,6 +271,7 @@ export default function ZineCanvas({
           currentPage={currentPage}
           setCurrentPage={setCurrentPage}
           addNewPage={addNewPage}
+          setPages={setPages}
         />
         {/* Main canvas area */}
         <div className="flex flex-1">
@@ -271,81 +281,88 @@ export default function ZineCanvas({
             onClick={handleCanvasClick}
           >
             <div className="min-h-full min-w-full flex flex-col items-center justify-center p-8 gap-8">
-              {pages.map((page, pageIndex) => (
-                <div
-                  key={page.id}
-                  ref={(el) => {
-                    pageRefs.current[pageIndex] = el;
-                  }}
-                  className={`bg-white shadow-lg ${
-                    pageIndex !== currentPage ? "hidden" : ""
-                  }`}
-                  style={{
-                    width,
-                    height,
-                    transform: `scale(${scale})`,
-                    transformOrigin: "top",
-                    margin: `0px ${Math.max(((scale - 1) * width) / 2, 0)}px`,
-                    position: "relative",
-                  }}
-                  onClick={(e) => {
-                    // If clicking directly on the page (not on an element)
-                    if (e.target === e.currentTarget) {
-                      setSelectedImageId(null);
-                      setCurrentFilter("none");
-                    }
-                  }}
-                >
-                  {page.elements
-                    .sort((a, b) => a.z_index - b.z_index)
-                    .map((element, index) => (
-                      <DraggableElement
-                        key={element.id}
-                        element={element}
-                        scale={scale}
-                        onDelete={() =>
-                          handleDeleteElement(
-                            element.id,
-                            pages,
-                            currentPage,
-                            setPages
-                          )
-                        }
-                        onDragStop={handleElementDragStop}
-                        onUpdateContent={(id, content) =>
-                          handleUpdateContent(
-                            id,
-                            content,
-                            pages,
-                            currentPage,
-                            setPages
-                          )
-                        }
-                        onResize={handleElementResize}
-                        onMoveLayer={handleElementMoveLayer}
-                        isTopLayer={
-                          index ===
-                          (pages[currentPage]?.elements?.length ?? 0) - 1
-                        }
-                        isBottomLayer={index === 0}
-                        canvasWidth={width}
-                        canvasHeight={height}
-                        onUpdateFilter={(id, filter) =>
-                          handleUpdateFilter(
-                            id,
-                            filter,
-                            pages,
-                            currentPage,
-                            setPages
-                          )
-                        }
-                        onCopy={() => handleCopy(element)}
-                        isSelected={element.id === selectedImageId}
-                        onSelect={() => handleImageSelect(element.id)}
-                      />
-                    ))}
-                </div>
-              ))}
+              {pages.map((page, pageIndex) => {
+                console.log("Rendering page:", {
+                  pageIndex,
+                  pageId: page.id,
+                  isCurrentPage: pageIndex === currentPage,
+                  elementsCount: page.elements.length,
+                });
+                return (
+                  <div
+                    key={page.id}
+                    ref={(el) => {
+                      pageRefs.current[pageIndex] = el;
+                    }}
+                    className={`bg-white shadow-lg transition-all ${
+                      pageIndex !== currentPage ? "hidden" : ""
+                    }`}
+                    style={{
+                      width,
+                      height,
+                      transform: `scale(${scale})`,
+                      transformOrigin: "top",
+                      margin: `0px ${Math.max(((scale - 1) * width) / 2, 0)}px`,
+                      position: "relative",
+                    }}
+                    onClick={(e) => {
+                      if (e.target === e.currentTarget) {
+                        setSelectedImageId(null);
+                        setCurrentFilter("none");
+                      }
+                    }}
+                  >
+                    {page.elements
+                      .sort((a, b) => a.z_index - b.z_index)
+                      .map((element, index) => (
+                        <DraggableElement
+                          key={element.id}
+                          element={element}
+                          scale={scale}
+                          onDelete={() =>
+                            handleDeleteElement(
+                              element.id,
+                              pages,
+                              currentPage,
+                              setPages
+                            )
+                          }
+                          onDragStop={handleElementDragStop}
+                          onUpdateContent={(id, content) =>
+                            handleUpdateContent(
+                              id,
+                              content,
+                              pages,
+                              currentPage,
+                              setPages
+                            )
+                          }
+                          onResize={handleElementResize}
+                          onMoveLayer={handleElementMoveLayer}
+                          isTopLayer={
+                            index ===
+                            (pages[currentPage]?.elements?.length ?? 0) - 1
+                          }
+                          isBottomLayer={index === 0}
+                          canvasWidth={width}
+                          canvasHeight={height}
+                          onUpdateFilter={(id, filter) =>
+                            handleUpdateFilter(
+                              id,
+                              filter,
+                              pages,
+                              currentPage,
+                              setPages
+                            )
+                          }
+                          onCopy={() => handleCopy(element)}
+                          isSelected={element.id === selectedImageId}
+                          onSelect={() => handleImageSelect(element.id)}
+                        />
+                      ))}
+                  </div>
+                );
+              })}
             </div>
           </div>
 

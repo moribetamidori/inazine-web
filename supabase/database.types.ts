@@ -94,6 +94,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          page_order: number | null
           preview: string | null
           updated_at: string
           zine_id: string
@@ -101,6 +102,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          page_order?: number | null
           preview?: string | null
           updated_at?: string
           zine_id: string
@@ -108,6 +110,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          page_order?: number | null
           preview?: string | null
           updated_at?: string
           zine_id?: string

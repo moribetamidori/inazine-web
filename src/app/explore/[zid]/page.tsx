@@ -44,12 +44,7 @@ export default function ExploreZinePage() {
                 <div className="text-xl">Loading zine preview...</div>
               </div>
             ) : (
-              <div
-                className="w-full"
-                style={{
-                  maxWidth: "840px",
-                }}
-              >
+              <div className="w-full">
                 <ZineBook pages={previewPages} />
               </div>
             )}

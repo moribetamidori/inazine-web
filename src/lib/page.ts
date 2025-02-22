@@ -6,10 +6,22 @@ type Page = Database["public"]["Tables"]["pages"]["Row"];
 export async function createPage(zineId: string) {
   const supabase = createClient();
 
+  // Get the current highest page_order
+  const { data: lastPage } = await supabase
+    .from("pages")
+    .select("page_order")
+    .eq("zine_id", zineId)
+    .order("page_order", { ascending: false })
+    .limit(1)
+    .single();
+
+  const nextOrder = (lastPage?.page_order ?? -1) + 1;
+
   const { data: page, error } = await supabase
     .from("pages")
     .insert({
       zine_id: zineId,
+      page_order: nextOrder,
     })
     .select()
     .single();
@@ -25,7 +37,7 @@ export async function getPagesByZineId(zineId: string) {
     .from("pages")
     .select("*, elements(*), preview")
     .eq("zine_id", zineId)
-    .order("created_at", { ascending: true });
+    .order("page_order", { ascending: true });
 
   if (error) throw error;
   return pages;
