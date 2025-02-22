@@ -20,7 +20,7 @@ export function useFlipbook(ref: RefObject<HTMLDivElement | null>) {
           )
         ).then(() => {
           $flipbook.turn({
-            width: 840,
+            width: 900,
             height: 600,
             autoCenter: true,
             display: "double",

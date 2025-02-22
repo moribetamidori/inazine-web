@@ -14,7 +14,7 @@ export default function ZinePreview({ pages, onClose }: PreviewProps) {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-      <div className="bg-white p-8 rounded-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+      <div className="bg-white p-8 rounded-lg w-full max-w-6xl max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between mb-4">
           <h2 className="text-2xl font-bold">Preview</h2>
           <button
@@ -25,15 +25,16 @@ export default function ZinePreview({ pages, onClose }: PreviewProps) {
           </button>
         </div>
 
-        <div className="flex justify-center w-full">
+        <div className="flex justify-center w-full overflow-visible">
           <div
             ref={flipbookRef}
             className="flipbook"
             style={{
               width: "840px",
-              height: "1120px",
+              height: "600px",
               visibility: "hidden",
               opacity: 0,
+              transformOrigin: "center center",
             }}
           >
             {pages.map((pageUrl, index) =>
