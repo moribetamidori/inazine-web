@@ -64,7 +64,6 @@ export async function getZineTitle(zineId: string) {
   return zine?.title;
 }
 
-
 export async function updateZine(zineId: string, updates: Partial<Zine>) {
   const supabase = createClient();
 
@@ -85,18 +84,6 @@ export async function deleteZine(zineId: string) {
   const { error } = await supabase.from("zines").delete().eq("id", zineId);
 
   if (error) throw error;
-}
-//getpagesbyzineid
-export async function getPagesByZineId(zineId: string) {
-  const supabase = createClient();
-
-  const { data: pages, error } = await supabase
-    .from("pages")
-    .select("*")
-    .eq("zine_id", zineId);
-
-  if (error) throw error;
-  return pages;
 }
 
 export async function compressImage(
@@ -169,7 +156,7 @@ export async function generatePreview(
       .from("pages")
       .select("id")
       .eq("zine_id", zineId)
-      .order("created_at", { ascending: true });
+      .order("page_order", { ascending: true });
     pageIds = pagesData?.map((page) => page.id) || [];
   }
 

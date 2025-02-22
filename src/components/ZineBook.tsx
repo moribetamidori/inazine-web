@@ -21,6 +21,7 @@ export default function ZineBook({ pages }: PreviewProps) {
           height: "600px",
           visibility: "hidden",
           opacity: 0,
+          transformOrigin: "center center",
         }}
       >
         {pages.map((pageUrl, index) =>

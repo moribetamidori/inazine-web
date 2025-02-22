@@ -85,7 +85,7 @@ export async function getCoverByZineId(zineId: string) {
     .from("pages")
     .select("preview")
     .eq("zine_id", zineId)
-    .order("created_at", { ascending: true })
+    .order("page_order", { ascending: true })
     .limit(1)
     .single();
 
