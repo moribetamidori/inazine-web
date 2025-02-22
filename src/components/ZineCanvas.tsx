@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import type { Zine } from "@/types/zine";
 import ZinePreview from "./ZinePreview";
 import { createPage } from "@/lib/page";
@@ -18,6 +18,7 @@ import { generatePreview as generateZinePreview } from "@/lib/zine";
 import { Element } from "@/types/zine";
 import { createElement } from "@/lib/element";
 import { ImageFilterMenu } from "./ImageFilterMenu";
+import Thumbnail from "@/components/Thumbnail";
 
 interface ZineCanvasProps {
   width?: number;
@@ -159,7 +160,7 @@ export default function ZineCanvas({
     setCopiedElement(element);
   };
 
-  const handlePaste = async () => {
+  const handlePaste = useCallback(async () => {
     if (!copiedElement || !pages[currentPage]?.id) return;
 
     const newElement = {
@@ -170,7 +171,6 @@ export default function ZineCanvas({
     };
 
     try {
-      // Create a new element in the database
       const createdElement = await createElement({
         page_id: pages[currentPage].id,
         type: newElement.type,
@@ -184,14 +184,12 @@ export default function ZineCanvas({
         filter: newElement.filter,
       });
 
-      // Ensure the type is correctly cast
       const typedElement: Element = {
         ...createdElement,
         type: createdElement.type as "text" | "image",
         filter: createdElement.filter as string,
       };
 
-      // Update the local state with the new element
       setPages(
         pages.map((page, index) =>
           index === currentPage
@@ -202,7 +200,7 @@ export default function ZineCanvas({
     } catch (error) {
       console.error("Error pasting element:", error);
     }
-  };
+  }, [copiedElement, pages, currentPage]);
 
   const handleImageSelect = (elementId: string) => {
     setSelectedImageId(elementId);
@@ -245,7 +243,7 @@ export default function ZineCanvas({
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [copiedElement, pages, currentPage]);
+  }, [copiedElement, pages, currentPage, handlePaste]);
 
   return (
     <div className="relative rounded-lg h-screen">
@@ -289,30 +287,12 @@ export default function ZineCanvas({
       </div>
       <div className="flex h-[90vh]">
         {/* Left sidebar with page thumbnails */}
-        <div className="w-48 bg-gray-100 overflow-y-auto border-r border-gray-200 flex flex-col gap-2 p-2">
-          {pages.map((_, index) => (
-            <button
-              key={index}
-              onClick={() => setCurrentPage(index)}
-              className={`relative aspect-[3/4] rounded-lg transition-all ${
-                currentPage === index
-                  ? "ring-2 ring-black ring-offset-2"
-                  : "hover:bg-gray-200"
-              }`}
-            >
-              <div className="absolute inset-0 bg-white border border-gray-300 rounded-lg flex items-center justify-center">
-                Page {index + 1}
-              </div>
-            </button>
-          ))}
-          <button
-            onClick={addNewPage}
-            className="aspect-[3/4] rounded-lg border-2 border-dashed border-gray-400 hover:border-black hover:bg-gray-50 flex items-center justify-center"
-          >
-            <span className="text-2xl">+</span>
-          </button>
-        </div>
-
+        <Thumbnail
+          pages={pages}
+          currentPage={currentPage}
+          setCurrentPage={setCurrentPage}
+          addNewPage={addNewPage}
+        />
         {/* Main canvas area */}
         <div className="flex flex-1">
           <div
