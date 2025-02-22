@@ -146,6 +146,12 @@ export function DraggableElement({
         } ${isSelected ? "ring-2 ring-black ring-offset-2" : ""}`}
         style={{ zIndex: element.z_index }}
         onDoubleClick={handleDoubleClick}
+        onClick={(e) => {
+          e.stopPropagation(); // Prevent click from bubbling up to canvas
+          if (element.type === "image") {
+            onSelect();
+          }
+        }}
       >
         {element.type === "text" ? (
           <div className="relative">
@@ -238,28 +244,28 @@ export function DraggableElement({
                     style={{ pointerEvents: "none" }}
                   />
                 </div>
-                {isResizing && (
+                {element.type === "image" && isSelected && (
                   <>
                     <div
-                      className="absolute w-3 h-3 bg-white border-2 border-black rounded-full cursor-nw-resize -top-1.5 -left-1.5"
+                      className="absolute w-5 h-5 bg-white border-2 border-black rounded-full cursor-nw-resize -top-2.5 -left-2.5"
                       onMouseDown={(e) =>
                         handleResize("topLeft", e.nativeEvent)
                       }
                     />
                     <div
-                      className="absolute w-3 h-3 bg-white border-2 border-black rounded-full cursor-ne-resize -top-1.5 -right-1.5"
+                      className="absolute w-5 h-5 bg-white border-2 border-black rounded-full cursor-ne-resize -top-2.5 -right-2.5"
                       onMouseDown={(e) =>
                         handleResize("topRight", e.nativeEvent)
                       }
                     />
                     <div
-                      className="absolute w-3 h-3 bg-white border-2 border-black rounded-full cursor-sw-resize -bottom-1.5 -left-1.5"
+                      className="absolute w-5 h-5 bg-white border-2 border-black rounded-full cursor-sw-resize -bottom-2.5 -left-2.5"
                       onMouseDown={(e) =>
                         handleResize("bottomLeft", e.nativeEvent)
                       }
                     />
                     <div
-                      className="absolute w-3 h-3 bg-white border-2 border-black rounded-full cursor-se-resize -bottom-1.5 -right-1.5"
+                      className="absolute w-5 h-5 bg-white border-2 border-black rounded-full cursor-se-resize -bottom-2.5 -right-2.5"
                       onMouseDown={(e) =>
                         handleResize("bottomRight", e.nativeEvent)
                       }

@@ -221,6 +221,14 @@ export default function ZineCanvas({
     setCurrentFilter(filter);
   };
 
+  const handleCanvasClick = (e: React.MouseEvent) => {
+    // Only clear if clicking directly on the canvas container
+    if (e.target === e.currentTarget) {
+      setSelectedImageId(null);
+      setCurrentFilter("none");
+    }
+  };
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "c" && copiedElement) {
@@ -310,6 +318,7 @@ export default function ZineCanvas({
           <div
             ref={containerRef}
             className="relative bg-gray-50 flex-1 overflow-auto"
+            onClick={handleCanvasClick}
           >
             <div className="min-h-full min-w-full flex flex-col items-center justify-center p-8 gap-8">
               {pages.map((page, pageIndex) => (
@@ -328,6 +337,13 @@ export default function ZineCanvas({
                     transformOrigin: "top",
                     margin: `0px ${Math.max(((scale - 1) * width) / 2, 0)}px`,
                     position: "relative",
+                  }}
+                  onClick={(e) => {
+                    // If clicking directly on the page (not on an element)
+                    if (e.target === e.currentTarget) {
+                      setSelectedImageId(null);
+                      setCurrentFilter("none");
+                    }
                   }}
                 >
                   {page.elements
