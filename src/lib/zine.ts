@@ -51,6 +51,20 @@ export async function getZineById(zineId: string) {
   return zine;
 }
 
+export async function getZineTitle(zineId: string) {
+  const supabase = createClient();
+
+  const { data: zine, error } = await supabase
+    .from("zines")
+    .select("title")
+    .eq("id", zineId)
+    .single();
+
+  if (error) throw error;
+  return zine?.title;
+}
+
+
 export async function updateZine(zineId: string, updates: Partial<Zine>) {
   const supabase = createClient();
 

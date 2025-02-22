@@ -10,11 +10,13 @@ interface AuthenticatedLayoutProps {
   children: React.ReactNode;
   onNewZine?: () => void;
   zineTitle?: string;
+  zineId?: string;
 }
 
 export default function AuthenticatedLayout({
   children,
   zineTitle,
+  zineId,
 }: AuthenticatedLayoutProps) {
   const { user, loading } = useAuth();
   const router = useRouter();
@@ -75,7 +77,7 @@ export default function AuthenticatedLayout({
       </header>
 
       <main className="p-8">
-        <NavLinks zineTitle={zineTitle} />
+        <NavLinks zineTitle={zineTitle} zineId={zineId} />
         {children}
       </main>
 

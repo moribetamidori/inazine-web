@@ -2,7 +2,13 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 
-export default function NavLinks({ zineTitle }: { zineTitle?: string }) {
+export default function NavLinks({
+  zineTitle,
+  zineId,
+}: {
+  zineTitle?: string;
+  zineId?: string;
+}) {
   const pathname = usePathname();
   const { user } = useAuth();
 
@@ -11,6 +17,10 @@ export default function NavLinks({ zineTitle }: { zineTitle?: string }) {
   const isProfile = pathname.includes(`/${user.id}/profile`);
   const isExplore = pathname.includes("/explore");
   const isFeed = pathname === "/home";
+  const isEdit = pathname.includes(`/${user.id}/${zineId}`);
+  console.log(zineTitle);
+  console.log(isExplore);
+  console.log(isProfile);
 
   return (
     <div className="mb-2">
@@ -37,9 +47,23 @@ export default function NavLinks({ zineTitle }: { zineTitle?: string }) {
             </Link>
           </>
         )}
-        {zineTitle && (
+        {zineTitle && isExplore && (
           <>
-            <span className="font-bold">{" "}/{" "}</span>
+            <span className="font-bold"> / </span>
+            <span className="font-bold">{zineTitle}</span>
+          </>
+        )}
+        {zineTitle && isEdit && (
+          <>
+            {" "}
+            ·{" "}
+            <Link
+              href={`/${user.id}/profile`}
+              className={isProfile ? "font-bold" : ""}
+            >
+              Profile
+            </Link>
+            <span className="font-bold"> / </span>
             <span className="font-bold">{zineTitle}</span>
           </>
         )}

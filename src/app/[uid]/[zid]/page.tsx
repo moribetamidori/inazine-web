@@ -34,7 +34,7 @@ export default function ZinePage() {
   }, [params.zid, supabase]);
 
   return (
-    <AuthenticatedLayout>
+    <AuthenticatedLayout zineTitle={zine?.title} zineId={params.zid as string}>
       <div className="min-h-screen">
         <div className="max-w-screen-2xl mx-auto">
           {zine && <ZineCanvas zine={zine} />}
