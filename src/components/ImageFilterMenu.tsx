@@ -1,8 +1,16 @@
-// src/components/ImageFilterMenu.tsx
+import DocumentTextIcon from "@heroicons/react/24/outline/DocumentTextIcon";
+import PhotoIcon from "@heroicons/react/24/outline/PhotoIcon";
+import EyeIcon from "@heroicons/react/24/outline/EyeIcon";
+
 interface ImageFilterMenuProps {
   currentFilter: string;
   onFilterChange: (filter: string) => void;
   disabled?: boolean;
+  addText: () => void;
+  addImage: () => void;
+  generatePreview: () => void;
+  scale: number;
+  setScale: (scale: number) => void;
 }
 
 const FILTERS = [
@@ -17,36 +25,78 @@ const FILTERS = [
   { name: "cool", label: "Cool" },
 ];
 
-export function ImageFilterMenu({
+export function VerticalToolbar({
   currentFilter,
   onFilterChange,
   disabled = false,
+  addText,
+  addImage,
+  generatePreview,
+  scale,
+  setScale,
 }: ImageFilterMenuProps) {
   return (
-    <div className="p-4">
-      <h3 className="text-sm font-medium text-gray-900 mb-4">
-        Image Filters
-        {disabled && (
-          <span className="block text-xs text-gray-500 mt-1">
-            Select an image to apply filters
-          </span>
+    <div className="flex flex-col gap-2">
+      <div className="flex w-full gap-2 m-2">
+        <button
+          onClick={addText}
+          className="p-1 w-10 h-10 bg-black text-white rounded hover:bg-gray-800 items-center flex justify-center"
+        >
+          <DocumentTextIcon className="size-6" />
+        </button>
+        <button
+          onClick={addImage}
+          className="p-1 w-10 h-10 bg-black text-white rounded hover:bg-gray-800 items-center flex justify-center"
+        >
+          <PhotoIcon className="size-6" />
+        </button>
+        <button
+          onClick={generatePreview}
+          className="p-1 w-10 h-10 bg-green-600 text-white rounded hover:bg-green-700 items-center flex justify-center"
+        >
+          <EyeIcon className="size-6" />
+        </button>
+      </div>
+      <span className="text-gray-500 flex items-center gap-2 ml-2">
+        {/* Scale: {Math.round(scale * 100)}% */}
+        <input
+          type="range"
+          min="50"
+          max="100"
+          value={scale * 100}
+          onChange={(e) => setScale(Number(e.target.value) / 100)}
+          className="cursor-pointer"
+        />
+        {" "}
+        <span className="text-gray-500 font-mono">
+          {Math.round(scale * 100)}%
+        </span>
+      </span>
+
+      <div className="px-4 flex flex-col gap-2">
+        {!disabled && (
+          <>
+            <h3 className="text-sm font-bold text-gray-900 mb-2 ">
+              Image Filters
+            </h3>
+            <div className="flex flex-col gap-2">
+              {FILTERS.map((filter) => (
+                <button
+                  key={filter.name}
+                  onClick={() => onFilterChange(filter.name)}
+                  disabled={disabled}
+                  className={`w-full px-3 py-2 text-left text-sm rounded-md transition-colors ${
+                    currentFilter === filter.name
+                      ? "bg-black text-white"
+                      : "hover:bg-gray-200"
+                  }`}
+                >
+                  {filter.label}
+                </button>
+              ))}
+            </div>
+          </>
         )}
-      </h3>
-      <div className="flex flex-col gap-2">
-        {FILTERS.map((filter) => (
-          <button
-            key={filter.name}
-            onClick={() => onFilterChange(filter.name)}
-            disabled={disabled}
-            className={`w-full px-3 py-2 text-left text-sm rounded-md transition-colors ${
-              currentFilter === filter.name
-                ? "bg-black text-white"
-                : "hover:bg-gray-200"
-            } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
-          >
-            {filter.label}
-          </button>
-        ))}
       </div>
     </div>
   );

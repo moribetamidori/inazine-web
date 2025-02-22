@@ -17,7 +17,7 @@ import { DraggableElement } from "./DraggableElement";
 import { generatePreview as generateZinePreview } from "@/lib/zine";
 import { Element } from "@/types/zine";
 import { createElement } from "@/lib/element";
-import { ImageFilterMenu } from "./ImageFilterMenu";
+import { VerticalToolbar } from "./ImageFilterMenu";
 import Thumbnail from "@/components/Thumbnail";
 
 interface ZineCanvasProps {
@@ -247,44 +247,6 @@ export default function ZineCanvas({
 
   return (
     <div className="relative rounded-lg h-screen">
-      <div className="flex justify-between bg-white">
-        <div className="p-2">
-          <h1 className="text-2xl font-bold">{zine?.title}</h1>
-        </div>
-        <div className="z-10 bg-white border-b p-2 flex gap-2 items-center">
-          <button
-            onClick={addText}
-            className="px-3 py-1 bg-black text-white rounded hover:bg-gray-800"
-          >
-            Add Text
-          </button>
-          <button
-            onClick={addImage}
-            className="px-3 py-1 bg-black text-white rounded hover:bg-gray-800"
-          >
-            Add Image
-          </button>
-          <button
-            onClick={generatePreview}
-            className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700"
-          >
-            Preview
-          </button>
-          <div className="flex items-center gap-2 ml-4">
-            <input
-              type="range"
-              min="50"
-              max="100"
-              value={scale * 100}
-              onChange={(e) => setScale(Number(e.target.value) / 100)}
-              className="w-32 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-            />
-            <span className="text-gray-500 min-w-[80px]">
-              Scale: {Math.round(scale * 100)}%
-            </span>
-          </div>
-        </div>
-      </div>
       <div className="flex h-[90vh]">
         {/* Left sidebar with page thumbnails */}
         <Thumbnail
@@ -380,8 +342,8 @@ export default function ZineCanvas({
           </div>
 
           {/* Add the filter menu here */}
-          <div className="w-48 bg-gray-100 border-l border-gray-200">
-            <ImageFilterMenu
+          <div className="w-60 bg-gray-100 border-l border-gray-200">
+            <VerticalToolbar
               currentFilter={currentFilter}
               onFilterChange={handleFilterChange}
               disabled={
@@ -390,6 +352,11 @@ export default function ZineCanvas({
                   (el) => el.id === selectedImageId && el.type === "image"
                 )
               }
+              addText={addText}
+              addImage={addImage}
+              generatePreview={generatePreview}
+              scale={scale}
+              setScale={setScale}
             />
           </div>
         </div>
