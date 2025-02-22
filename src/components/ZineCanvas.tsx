@@ -229,6 +229,7 @@ export default function ZineCanvas({
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Handle copy/paste keyboard shortcuts
       if ((e.metaKey || e.ctrlKey) && e.key === "c" && copiedElement) {
         e.preventDefault();
         handleCopy(copiedElement);
@@ -237,13 +238,20 @@ export default function ZineCanvas({
         e.preventDefault();
         handlePaste();
       }
+
+      // Handle delete key
+      if ((e.key === "Delete" || e.key === "Backspace") && selectedImageId) {
+        e.preventDefault();
+        handleDeleteElement(selectedImageId, pages, currentPage, setPages);
+        setSelectedImageId(null); // Clear selection after delete
+      }
     };
 
     document.addEventListener("keydown", handleKeyDown);
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [copiedElement, pages, currentPage, handlePaste]);
+  }, [copiedElement, pages, currentPage, selectedImageId, handlePaste]);
 
   return (
     <div className="relative rounded-lg h-screen">

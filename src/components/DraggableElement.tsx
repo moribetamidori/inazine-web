@@ -214,12 +214,7 @@ export function DraggableElement({
               >
                 ↓
               </button>
-              <button
-                onClick={() => onDelete(element.id)}
-                className="text-red-500 hover:text-red-700"
-              >
-                Delete
-              </button>
+      
               <button
                 onClick={onCopy}
                 className="text-blue-500 hover:text-blue-700"
