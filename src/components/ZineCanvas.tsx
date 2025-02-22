@@ -17,6 +17,7 @@ import { DraggableElement } from "./DraggableElement";
 import { generatePreview as generateZinePreview } from "@/lib/zine";
 import { Element } from "@/types/zine";
 import { createElement } from "@/lib/element";
+import { ImageFilterMenu } from "./ImageFilterMenu";
 
 interface ZineCanvasProps {
   width?: number;
@@ -37,6 +38,8 @@ export default function ZineCanvas({
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [previewPages, setPreviewPages] = useState<string[]>([]);
   const [copiedElement, setCopiedElement] = useState<Element | null>(null);
+  const [currentFilter, setCurrentFilter] = useState<string>("none");
+  const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
 
   // Handle zoom with trackpad/mouse wheel
   const handleWheel = (e: WheelEvent) => {
@@ -201,6 +204,23 @@ export default function ZineCanvas({
     }
   };
 
+  const handleImageSelect = (elementId: string) => {
+    setSelectedImageId(elementId);
+    const element = pages[currentPage]?.elements.find(
+      (el) => el.id === elementId
+    );
+    if (element?.type === "image") {
+      setCurrentFilter(element.filter || "none");
+    }
+  };
+
+  const handleFilterChange = (filter: string) => {
+    if (!selectedImageId) return;
+
+    handleUpdateFilter(selectedImageId, filter, pages, currentPage, setPages);
+    setCurrentFilter(filter);
+  };
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "c" && copiedElement) {
@@ -286,77 +306,95 @@ export default function ZineCanvas({
         </div>
 
         {/* Main canvas area */}
-        <div
-          ref={containerRef}
-          className="relative bg-gray-50 flex-1 overflow-auto"
-        >
-          <div className="min-h-full min-w-full flex flex-col items-center justify-center p-8 gap-8">
-            {pages.map((page, pageIndex) => (
-              <div
-                key={page.id}
-                ref={(el) => {
-                  pageRefs.current[pageIndex] = el;
-                }}
-                className={`bg-white shadow-lg ${
-                  pageIndex !== currentPage ? "hidden" : ""
-                }`}
-                style={{
-                  width,
-                  height,
-                  transform: `scale(${scale})`,
-                  transformOrigin: "top",
-                  margin: `0px ${Math.max(((scale - 1) * width) / 2, 0)}px`,
-                  position: "relative",
-                }}
-              >
-                {page.elements
-                  .sort((a, b) => a.z_index - b.z_index)
-                  .map((element, index) => (
-                    <DraggableElement
-                      key={element.id}
-                      element={element}
-                      scale={scale}
-                      onDelete={() =>
-                        handleDeleteElement(
-                          element.id,
-                          pages,
-                          currentPage,
-                          setPages
-                        )
-                      }
-                      onDragStop={handleElementDragStop}
-                      onUpdateContent={(id, content) =>
-                        handleUpdateContent(
-                          id,
-                          content,
-                          pages,
-                          currentPage,
-                          setPages
-                        )
-                      }
-                      onResize={handleElementResize}
-                      onMoveLayer={handleElementMoveLayer}
-                      isTopLayer={
-                        index ===
-                        (pages[currentPage]?.elements?.length ?? 0) - 1
-                      }
-                      isBottomLayer={index === 0}
-                      canvasWidth={width}
-                      canvasHeight={height}
-                      onUpdateFilter={(id, filter) =>
-                        handleUpdateFilter(
-                          id,
-                          filter,
-                          pages,
-                          currentPage,
-                          setPages
-                        )
-                      }
-                      onCopy={() => handleCopy(element)}
-                    />
-                  ))}
-              </div>
-            ))}
+        <div className="flex flex-1">
+          <div
+            ref={containerRef}
+            className="relative bg-gray-50 flex-1 overflow-auto"
+          >
+            <div className="min-h-full min-w-full flex flex-col items-center justify-center p-8 gap-8">
+              {pages.map((page, pageIndex) => (
+                <div
+                  key={page.id}
+                  ref={(el) => {
+                    pageRefs.current[pageIndex] = el;
+                  }}
+                  className={`bg-white shadow-lg ${
+                    pageIndex !== currentPage ? "hidden" : ""
+                  }`}
+                  style={{
+                    width,
+                    height,
+                    transform: `scale(${scale})`,
+                    transformOrigin: "top",
+                    margin: `0px ${Math.max(((scale - 1) * width) / 2, 0)}px`,
+                    position: "relative",
+                  }}
+                >
+                  {page.elements
+                    .sort((a, b) => a.z_index - b.z_index)
+                    .map((element, index) => (
+                      <DraggableElement
+                        key={element.id}
+                        element={element}
+                        scale={scale}
+                        onDelete={() =>
+                          handleDeleteElement(
+                            element.id,
+                            pages,
+                            currentPage,
+                            setPages
+                          )
+                        }
+                        onDragStop={handleElementDragStop}
+                        onUpdateContent={(id, content) =>
+                          handleUpdateContent(
+                            id,
+                            content,
+                            pages,
+                            currentPage,
+                            setPages
+                          )
+                        }
+                        onResize={handleElementResize}
+                        onMoveLayer={handleElementMoveLayer}
+                        isTopLayer={
+                          index ===
+                          (pages[currentPage]?.elements?.length ?? 0) - 1
+                        }
+                        isBottomLayer={index === 0}
+                        canvasWidth={width}
+                        canvasHeight={height}
+                        onUpdateFilter={(id, filter) =>
+                          handleUpdateFilter(
+                            id,
+                            filter,
+                            pages,
+                            currentPage,
+                            setPages
+                          )
+                        }
+                        onCopy={() => handleCopy(element)}
+                        isSelected={element.id === selectedImageId}
+                        onSelect={() => handleImageSelect(element.id)}
+                      />
+                    ))}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Add the filter menu here */}
+          <div className="w-48 bg-gray-100 border-l border-gray-200">
+            <ImageFilterMenu
+              currentFilter={currentFilter}
+              onFilterChange={handleFilterChange}
+              disabled={
+                !selectedImageId ||
+                !pages[currentPage]?.elements.find(
+                  (el) => el.id === selectedImageId && el.type === "image"
+                )
+              }
+            />
           </div>
         </div>
       </div>

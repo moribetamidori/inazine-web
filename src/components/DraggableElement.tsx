@@ -7,7 +7,6 @@ import { EditorContent } from "@tiptap/react";
 import { TextEditorBubbleMenu } from "./TextEditorBubbleMenu";
 import { handleImageResize } from "@/lib/element";
 import { useZineEditor } from "@/hooks/useZineEditor";
-import { ImageFilterMenu } from "./ImageFilterMenu";
 
 interface DraggableElementProps {
   element: Element;
@@ -29,6 +28,8 @@ interface DraggableElementProps {
   isBottomLayer: boolean;
   onUpdateFilter: (id: string, filter: string) => void;
   onCopy: () => void;
+  isSelected: boolean;
+  onSelect: () => void;
 }
 
 export function DraggableElement({
@@ -43,8 +44,9 @@ export function DraggableElement({
   canvasHeight,
   isTopLayer,
   isBottomLayer,
-  onUpdateFilter,
   onCopy,
+  isSelected,
+  onSelect,
 }: DraggableElementProps) {
   const nodeRef = useRef<HTMLDivElement>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -106,6 +108,7 @@ export function DraggableElement({
       setIsEditing(true);
     } else if (element.type === "image") {
       setIsResizing(!isResizing);
+      onSelect();
     }
   };
 
@@ -140,7 +143,7 @@ export function DraggableElement({
         ref={nodeRef}
         className={`absolute ${
           isEditing ? "cursor-text" : "cursor-grab group"
-        }`}
+        } ${isSelected ? "ring-2 ring-black ring-offset-2" : ""}`}
         style={{ zIndex: element.z_index }}
         onDoubleClick={handleDoubleClick}
       >
@@ -262,14 +265,6 @@ export function DraggableElement({
                       }
                     />
                   </>
-                )}
-                {isResizing && element.type === "image" && (
-                  <ImageFilterMenu
-                    currentFilter={element.filter || "none"}
-                    onFilterChange={(filter) =>
-                      onUpdateFilter(element.id, filter)
-                    }
-                  />
                 )}
               </>
             )}

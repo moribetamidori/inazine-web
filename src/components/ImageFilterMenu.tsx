@@ -2,6 +2,7 @@
 interface ImageFilterMenuProps {
   currentFilter: string;
   onFilterChange: (filter: string) => void;
+  disabled?: boolean;
 }
 
 const FILTERS = [
@@ -19,18 +20,29 @@ const FILTERS = [
 export function ImageFilterMenu({
   currentFilter,
   onFilterChange,
+  disabled = false,
 }: ImageFilterMenuProps) {
   return (
-    <div className="absolute -right-40 top-0 w-36 bg-white shadow-lg rounded-lg overflow-hidden">
-      <div className="py-2">
-        <h3 className="px-3 text-sm font-medium text-gray-900 mb-2">Filters</h3>
+    <div className="p-4">
+      <h3 className="text-sm font-medium text-gray-900 mb-4">
+        Image Filters
+        {disabled && (
+          <span className="block text-xs text-gray-500 mt-1">
+            Select an image to apply filters
+          </span>
+        )}
+      </h3>
+      <div className="flex flex-col gap-2">
         {FILTERS.map((filter) => (
           <button
             key={filter.name}
             onClick={() => onFilterChange(filter.name)}
-            className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-100 ${
-              currentFilter === filter.name ? "bg-gray-100" : ""
-            }`}
+            disabled={disabled}
+            className={`w-full px-3 py-2 text-left text-sm rounded-md transition-colors ${
+              currentFilter === filter.name
+                ? "bg-black text-white"
+                : "hover:bg-gray-200"
+            } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
           >
             {filter.label}
           </button>
