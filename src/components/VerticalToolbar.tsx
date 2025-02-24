@@ -9,7 +9,7 @@ interface VerticalToolbarProps {
   addText: () => void;
   addImage: () => void;
   generatePreview: () => void;
-  previewDisabled: boolean;
+  isLoadingPreview: boolean;
   scale: number;
   setScale: (scale: number) => void;
 }
@@ -33,7 +33,7 @@ export function VerticalToolbar({
   addText,
   addImage,
   generatePreview,
-  previewDisabled,
+  isLoadingPreview,
   scale,
   setScale,
 }: VerticalToolbarProps) {
@@ -54,14 +54,18 @@ export function VerticalToolbar({
         </button>
         <button
           onClick={generatePreview}
-          disabled={previewDisabled}
+          disabled={isLoadingPreview}
           className={`p-1 w-10 h-10 rounded items-center flex justify-center ${
-            previewDisabled
+            isLoadingPreview
               ? "bg-gray-300 cursor-not-allowed"
               : "bg-black text-white hover:bg-gray-800"
           }`}
         >
-          <EyeIcon className="size-6" />
+          {isLoadingPreview ? (
+            <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
+          ) : (
+            <EyeIcon className="size-6" />
+          )}
         </button>
       </div>
       <span className="text-gray-500 flex items-center gap-2 ml-2">

@@ -41,7 +41,7 @@ export default function ZineCanvas({
   const [copiedElement, setCopiedElement] = useState<Element | null>(null);
   const [currentFilter, setCurrentFilter] = useState<string>("none");
   const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
-  const [allPagesLoaded, setAllPagesLoaded] = useState(false);
+  const [isLoadingPreview, setIsLoadingPreview] = useState(false);
 
   // Add logging for page changes
   useEffect(() => {
@@ -51,39 +51,6 @@ export default function ZineCanvas({
       visiblePageId: pages[currentPage]?.id,
     });
   }, [currentPage, pages]);
-
-  // Track loading state of pages
-  useEffect(() => {
-    if (!pages.length) return;
-
-    const loadAllPageElements = async () => {
-      try {
-        // Create an array of promises that resolve when each page's elements are loaded
-        const loadPromises = pages.map((page) =>
-          Promise.all(
-            page.elements
-              .filter((el) => el.type === "image")
-              .map(
-                (el) =>
-                  new Promise((resolve, reject) => {
-                    const img = new Image();
-                    img.onload = () => resolve(true);
-                    img.onerror = () => reject();
-                    img.src = el.content;
-                  })
-              )
-          )
-        );
-
-        await Promise.all(loadPromises);
-        setAllPagesLoaded(true);
-      } catch (error) {
-        console.error("Error loading all pages:", error);
-      }
-    };
-
-    loadAllPageElements();
-  }, [pages]);
 
   // Handle zoom with trackpad/mouse wheel
   const handleWheel = (e: WheelEvent) => {
@@ -167,51 +134,77 @@ export default function ZineCanvas({
   };
 
   const generatePreview = async () => {
-    if (!allPagesLoaded) {
-      console.warn("Cannot generate preview: all pages are not yet loaded");
-      return;
+    setIsLoadingPreview(true);
+
+    try {
+      // Load all page elements when preview is requested
+      const loadAllPageElements = async () => {
+        const loadPromises = pages.map((page) =>
+          Promise.all(
+            page.elements
+              .filter((el) => el.type === "image")
+              .map(
+                (el) =>
+                  new Promise((resolve, reject) => {
+                    const img = new Image();
+                    img.onload = () => resolve(true);
+                    img.onerror = () => reject();
+                    img.src = el.content;
+                  })
+              )
+          )
+        );
+
+        await Promise.all(loadPromises);
+      };
+
+      await loadAllPageElements();
+
+      // Store current page
+      const previousPage = currentPage;
+
+      // Temporarily show all pages
+      const currentHiddenPages = pageRefs.current.map((ref) => {
+        if (ref) {
+          const wasHidden = ref.classList.contains("hidden");
+          ref.classList.remove("hidden");
+          return wasHidden;
+        }
+        return false;
+      });
+
+      // Temporarily render all pages
+      setCurrentPage(-1);
+
+      // Wait for render
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      const filteredRefs = pageRefs.current.filter(
+        (ref): ref is HTMLDivElement => ref !== null
+      );
+
+      const images = await generateZinePreview(
+        filteredRefs,
+        width,
+        height,
+        zine?.id ?? ""
+      );
+
+      // Restore hidden state and current page
+      pageRefs.current.forEach((ref, index) => {
+        if (ref && currentHiddenPages[index]) {
+          ref.classList.add("hidden");
+        }
+      });
+      setCurrentPage(previousPage);
+
+      setPreviewPages(images);
+      setIsPreviewOpen(true);
+    } catch (error) {
+      console.error("Error generating preview:", error);
+    } finally {
+      setIsLoadingPreview(false);
     }
-
-    // Store current page
-    const previousPage = currentPage;
-
-    // Temporarily show all pages
-    const currentHiddenPages = pageRefs.current.map((ref) => {
-      if (ref) {
-        const wasHidden = ref.classList.contains("hidden");
-        ref.classList.remove("hidden");
-        return wasHidden;
-      }
-      return false;
-    });
-
-    // Temporarily render all pages
-    setCurrentPage(-1); // Special value to trigger all pages render
-
-    // Wait for render
-    await new Promise((resolve) => setTimeout(resolve, 100));
-
-    const filteredRefs = pageRefs.current.filter(
-      (ref): ref is HTMLDivElement => ref !== null
-    );
-
-    const images = await generateZinePreview(
-      filteredRefs,
-      width,
-      height,
-      zine?.id ?? ""
-    );
-
-    // Restore hidden state and current page
-    pageRefs.current.forEach((ref, index) => {
-      if (ref && currentHiddenPages[index]) {
-        ref.classList.add("hidden");
-      }
-    });
-    setCurrentPage(previousPage);
-
-    setPreviewPages(images);
-    setIsPreviewOpen(true);
   };
 
   const handleCopy = (element: Element) => {
@@ -423,7 +416,7 @@ export default function ZineCanvas({
               addText={addText}
               addImage={addImage}
               generatePreview={generatePreview}
-              previewDisabled={!allPagesLoaded}
+              isLoadingPreview={isLoadingPreview}
               scale={scale}
               setScale={setScale}
             />
