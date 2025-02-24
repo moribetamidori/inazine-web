@@ -106,12 +106,31 @@ export function DraggableElement({
           e.preventDefault();
           onCopy();
         }
+
+        // Handle layer movement
+        if (e.key === "[" && !isBottomLayer) {
+          e.preventDefault();
+          onMoveLayer(element.id, "down");
+        }
+        if (e.key === "]" && !isTopLayer) {
+          e.preventDefault();
+          onMoveLayer(element.id, "up");
+        }
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isSelected, isEditing, element.id, onDelete, onCopy]);
+  }, [
+    isSelected,
+    isEditing,
+    element.id,
+    onDelete,
+    onCopy,
+    onMoveLayer,
+    isTopLayer,
+    isBottomLayer,
+  ]);
 
   const handleDragStop = (e: DraggableEvent, data: DraggableData) => {
     const elementWidth = nodeRef.current?.offsetWidth || 0;
@@ -174,26 +193,7 @@ export function DraggableElement({
       >
         {element.type === "text" ? (
           <div className="relative">
-            <div className="absolute -top-8 left-0 hidden group-hover:flex gap-1 bg-white shadow-md rounded px-2 py-1 z-10">
-              <button
-                onClick={() => onMoveLayer(element.id, "up")}
-                disabled={isTopLayer}
-                className={`text-gray-700 hover:text-gray-900 ${
-                  isTopLayer ? "opacity-50 cursor-not-allowed" : ""
-                }`}
-              >
-                ↑
-              </button>
-              <button
-                onClick={() => onMoveLayer(element.id, "down")}
-                disabled={isBottomLayer}
-                className={`text-gray-700 hover:text-gray-900 ${
-                  isBottomLayer ? "opacity-50 cursor-not-allowed" : ""
-                }`}
-              >
-                ↓
-              </button>
-            </div>
+            <div className="absolute -top-8 left-0 hidden group-hover:flex gap-1 bg-white shadow-md rounded px-2 py-1 z-10"></div>
 
             <div className="min-w-[100px] p-2 relative text-[28px]">
               <EditorContent editor={editor} />
@@ -226,26 +226,7 @@ export function DraggableElement({
           </div>
         ) : (
           <div className="relative group">
-            <div className="absolute -top-8 left-0 hidden group-hover:flex gap-1 bg-white shadow-md rounded px-2 py-1 z-10">
-              <button
-                onClick={() => onMoveLayer(element.id, "up")}
-                disabled={isTopLayer}
-                className={`text-gray-700 hover:text-gray-900 ${
-                  isTopLayer ? "opacity-50 cursor-not-allowed" : ""
-                }`}
-              >
-                ↑
-              </button>
-              <button
-                onClick={() => onMoveLayer(element.id, "down")}
-                disabled={isBottomLayer}
-                className={`text-gray-700 hover:text-gray-900 ${
-                  isBottomLayer ? "opacity-50 cursor-not-allowed" : ""
-                }`}
-              >
-                ↓
-              </button>
-            </div>
+            <div className="absolute -top-8 left-0 hidden group-hover:flex gap-1 bg-white shadow-md rounded px-2 py-1 z-10"></div>
             {imageDimensions.width > 0 && (
               <>
                 <div
