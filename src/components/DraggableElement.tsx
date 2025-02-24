@@ -30,6 +30,7 @@ interface DraggableElementProps {
   onCopy: () => void;
   isSelected: boolean;
   onSelect: () => void;
+  handlePaste: () => void;
 }
 
 export function DraggableElement({
@@ -47,6 +48,7 @@ export function DraggableElement({
   onCopy,
   isSelected,
   onSelect,
+  handlePaste,
 }: DraggableElementProps) {
   const nodeRef = useRef<HTMLDivElement>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -62,7 +64,11 @@ export function DraggableElement({
     elementId: element.id,
     elementType: element.type,
     onUpdateContent,
-    onEditingEnd: () => setIsEditing(false),
+    onEditingEnd: () => {
+      if (isEditing) {
+        setIsEditing(false);
+      }
+    },
   });
 
   useEffect(() => {
@@ -94,6 +100,7 @@ export function DraggableElement({
 
   // Update the keyboard event listener to handle both delete and copy
   useEffect(() => {
+    console.log("isEditing?", isEditing);
     const handleKeyDown = (e: KeyboardEvent) => {
       if (isSelected && !isEditing) {
         // Handle delete
@@ -105,6 +112,10 @@ export function DraggableElement({
         if ((e.metaKey || e.ctrlKey) && e.key === "c") {
           e.preventDefault();
           onCopy();
+        }
+        if ((e.metaKey || e.ctrlKey) && e.key === "v") {
+          e.preventDefault();
+          handlePaste();
         }
 
         // Handle layer movement
@@ -193,7 +204,7 @@ export function DraggableElement({
       >
         {element.type === "text" ? (
           <div className="relative">
-            <div className="absolute -top-8 left-0 hidden group-hover:flex gap-1 bg-white shadow-md rounded px-2 py-1 z-10"></div>
+            <div className="absolute -top-8 left-0 hidden gap-1 bg-white shadow-md rounded px-2 py-1 z-10"></div>
 
             <div className="min-w-[100px] p-2 relative text-[28px]">
               <EditorContent editor={editor} />
@@ -226,7 +237,7 @@ export function DraggableElement({
           </div>
         ) : (
           <div className="relative group">
-            <div className="absolute -top-8 left-0 hidden group-hover:flex gap-1 bg-white shadow-md rounded px-2 py-1 z-10"></div>
+            <div className="absolute -top-8 left-0 hidden gap-1 bg-white shadow-md rounded px-2 py-1 z-10"></div>
             {imageDimensions.width > 0 && (
               <>
                 <div
