@@ -2,13 +2,14 @@ import DocumentTextIcon from "@heroicons/react/24/outline/DocumentTextIcon";
 import PhotoIcon from "@heroicons/react/24/outline/PhotoIcon";
 import EyeIcon from "@heroicons/react/24/outline/EyeIcon";
 
-interface ImageFilterMenuProps {
+interface VerticalToolbarProps {
   currentFilter: string;
   onFilterChange: (filter: string) => void;
-  disabled?: boolean;
+  disabled: boolean;
   addText: () => void;
   addImage: () => void;
   generatePreview: () => void;
+  previewDisabled: boolean;
   scale: number;
   setScale: (scale: number) => void;
 }
@@ -28,13 +29,14 @@ const FILTERS = [
 export function VerticalToolbar({
   currentFilter,
   onFilterChange,
-  disabled = false,
+  disabled,
   addText,
   addImage,
   generatePreview,
+  previewDisabled,
   scale,
   setScale,
-}: ImageFilterMenuProps) {
+}: VerticalToolbarProps) {
   return (
     <div className="flex flex-col gap-2">
       <div className="flex w-full gap-2 m-2">
@@ -52,7 +54,12 @@ export function VerticalToolbar({
         </button>
         <button
           onClick={generatePreview}
-          className="p-1 w-10 h-10 bg-green-600 text-white rounded hover:bg-green-700 items-center flex justify-center"
+          disabled={previewDisabled}
+          className={`p-1 w-10 h-10 rounded items-center flex justify-center ${
+            previewDisabled
+              ? "bg-gray-300 cursor-not-allowed"
+              : "bg-black text-white hover:bg-gray-800"
+          }`}
         >
           <EyeIcon className="size-6" />
         </button>
@@ -66,8 +73,7 @@ export function VerticalToolbar({
           value={scale * 100}
           onChange={(e) => setScale(Number(e.target.value) / 100)}
           className="cursor-pointer"
-        />
-        {" "}
+        />{" "}
         <span className="text-gray-500 font-mono">
           {Math.round(scale * 100)}%
         </span>

@@ -41,6 +41,7 @@ export default function ZineCanvas({
   const [copiedElement, setCopiedElement] = useState<Element | null>(null);
   const [currentFilter, setCurrentFilter] = useState<string>("none");
   const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
+  const [allPagesLoaded, setAllPagesLoaded] = useState(false);
 
   // Add logging for page changes
   useEffect(() => {
@@ -50,6 +51,39 @@ export default function ZineCanvas({
       visiblePageId: pages[currentPage]?.id,
     });
   }, [currentPage, pages]);
+
+  // Track loading state of pages
+  useEffect(() => {
+    if (!pages.length) return;
+
+    const loadAllPageElements = async () => {
+      try {
+        // Create an array of promises that resolve when each page's elements are loaded
+        const loadPromises = pages.map((page) =>
+          Promise.all(
+            page.elements
+              .filter((el) => el.type === "image")
+              .map(
+                (el) =>
+                  new Promise((resolve, reject) => {
+                    const img = new Image();
+                    img.onload = () => resolve(true);
+                    img.onerror = () => reject();
+                    img.src = el.content;
+                  })
+              )
+          )
+        );
+
+        await Promise.all(loadPromises);
+        setAllPagesLoaded(true);
+      } catch (error) {
+        console.error("Error loading all pages:", error);
+      }
+    };
+
+    loadAllPageElements();
+  }, [pages]);
 
   // Handle zoom with trackpad/mouse wheel
   const handleWheel = (e: WheelEvent) => {
@@ -133,6 +167,11 @@ export default function ZineCanvas({
   };
 
   const generatePreview = async () => {
+    if (!allPagesLoaded) {
+      console.warn("Cannot generate preview: all pages are not yet loaded");
+      return;
+    }
+
     // Store current page
     const previousPage = currentPage;
 
@@ -370,7 +409,7 @@ export default function ZineCanvas({
             </div>
           </div>
 
-          {/* Add the filter menu here */}
+          {/* Modified VerticalToolbar section */}
           <div className="w-60 bg-gray-100 border-l border-gray-200">
             <VerticalToolbar
               currentFilter={currentFilter}
@@ -384,6 +423,7 @@ export default function ZineCanvas({
               addText={addText}
               addImage={addImage}
               generatePreview={generatePreview}
+              previewDisabled={!allPagesLoaded}
               scale={scale}
               setScale={setScale}
             />
