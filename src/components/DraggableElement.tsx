@@ -92,6 +92,22 @@ export function DraggableElement({
     }
   }, [element]);
 
+  // Add keyboard event listener for delete
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (
+        (e.key === "Delete" || e.key === "Backspace") &&
+        isSelected &&
+        !isEditing
+      ) {
+        onDelete(element.id);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isSelected, isEditing, element.id, onDelete]);
+
   const handleDragStop = (e: DraggableEvent, data: DraggableData) => {
     const elementWidth = nodeRef.current?.offsetWidth || 0;
     const elementHeight = nodeRef.current?.offsetHeight || 0;
@@ -148,9 +164,7 @@ export function DraggableElement({
         onDoubleClick={handleDoubleClick}
         onClick={(e) => {
           e.stopPropagation(); // Prevent click from bubbling up to canvas
-          if (element.type === "image") {
-            onSelect();
-          }
+          onSelect(); // Call onSelect for both image and text elements
         }}
       >
         {element.type === "text" ? (
@@ -175,12 +189,6 @@ export function DraggableElement({
                 ↓
               </button>
               <button
-                onClick={() => onDelete(element.id)}
-                className="text-red-500 hover:text-red-700"
-              >
-                Delete
-              </button>
-              <button
                 onClick={onCopy}
                 className="text-blue-500 hover:text-blue-700"
               >
@@ -191,6 +199,30 @@ export function DraggableElement({
             <div className="min-w-[100px] p-2 relative text-[28px]">
               <EditorContent editor={editor} />
               {editor && <TextEditorBubbleMenu editor={editor} />}
+              {isSelected && !isEditing && (
+                <>
+                  <div
+                    className="absolute w-5 h-5 bg-white border-2 border-black rounded-full cursor-nw-resize -top-2.5 -left-2.5"
+                    onMouseDown={(e) => handleResize("topLeft", e.nativeEvent)}
+                  />
+                  <div
+                    className="absolute w-5 h-5 bg-white border-2 border-black rounded-full cursor-ne-resize -top-2.5 -right-2.5"
+                    onMouseDown={(e) => handleResize("topRight", e.nativeEvent)}
+                  />
+                  <div
+                    className="absolute w-5 h-5 bg-white border-2 border-black rounded-full cursor-sw-resize -bottom-2.5 -left-2.5"
+                    onMouseDown={(e) =>
+                      handleResize("bottomLeft", e.nativeEvent)
+                    }
+                  />
+                  <div
+                    className="absolute w-5 h-5 bg-white border-2 border-black rounded-full cursor-se-resize -bottom-2.5 -right-2.5"
+                    onMouseDown={(e) =>
+                      handleResize("bottomRight", e.nativeEvent)
+                    }
+                  />
+                </>
+              )}
             </div>
           </div>
         ) : (
@@ -214,7 +246,7 @@ export function DraggableElement({
               >
                 ↓
               </button>
-      
+
               <button
                 onClick={onCopy}
                 className="text-blue-500 hover:text-blue-700"
