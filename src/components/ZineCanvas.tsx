@@ -133,6 +133,9 @@ export default function ZineCanvas({
   };
 
   const generatePreview = async () => {
+    // Store current page
+    const previousPage = currentPage;
+
     // Temporarily show all pages
     const currentHiddenPages = pageRefs.current.map((ref) => {
       if (ref) {
@@ -142,6 +145,12 @@ export default function ZineCanvas({
       }
       return false;
     });
+
+    // Temporarily render all pages
+    setCurrentPage(-1); // Special value to trigger all pages render
+
+    // Wait for render
+    await new Promise((resolve) => setTimeout(resolve, 100));
 
     const filteredRefs = pageRefs.current.filter(
       (ref): ref is HTMLDivElement => ref !== null
@@ -154,12 +163,13 @@ export default function ZineCanvas({
       zine?.id ?? ""
     );
 
-    // Restore hidden state
+    // Restore hidden state and current page
     pageRefs.current.forEach((ref, index) => {
       if (ref && currentHiddenPages[index]) {
         ref.classList.add("hidden");
       }
     });
+    setCurrentPage(previousPage);
 
     setPreviewPages(images);
     setIsPreviewOpen(true);
@@ -281,38 +291,33 @@ export default function ZineCanvas({
             onClick={handleCanvasClick}
           >
             <div className="min-h-full min-w-full flex flex-col items-center justify-center p-8 gap-8">
-              {pages.map((page, pageIndex) => {
-                console.log("Rendering page:", {
-                  pageIndex,
-                  pageId: page.id,
-                  isCurrentPage: pageIndex === currentPage,
-                  elementsCount: page.elements.length,
-                });
-                return (
-                  <div
-                    key={page.id}
-                    ref={(el) => {
-                      pageRefs.current[pageIndex] = el;
-                    }}
-                    className={`bg-white shadow-lg transition-all ${
-                      pageIndex !== currentPage ? "hidden" : ""
-                    }`}
-                    style={{
-                      width,
-                      height,
-                      transform: `scale(${scale})`,
-                      transformOrigin: "top",
-                      margin: `0px ${Math.max(((scale - 1) * width) / 2, 0)}px`,
-                      position: "relative",
-                    }}
-                    onClick={(e) => {
-                      if (e.target === e.currentTarget) {
-                        setSelectedImageId(null);
-                        setCurrentFilter("none");
-                      }
-                    }}
-                  >
-                    {page.elements
+              {pages.map((page, pageIndex) => (
+                <div
+                  key={page.id}
+                  ref={(el) => {
+                    pageRefs.current[pageIndex] = el;
+                  }}
+                  className={`bg-white shadow-lg transition-all ${
+                    pageIndex !== currentPage ? "hidden" : ""
+                  }`}
+                  style={{
+                    width,
+                    height,
+                    transform: `scale(${scale})`,
+                    transformOrigin: "top",
+                    margin: `0px ${Math.max(((scale - 1) * width) / 2, 0)}px`,
+                    position: "relative",
+                  }}
+                  onClick={(e) => {
+                    if (e.target === e.currentTarget) {
+                      setSelectedImageId(null);
+                      setCurrentFilter("none");
+                    }
+                  }}
+                >
+                  {/* Only render elements for the current page or during preview generation */}
+                  {(pageIndex === currentPage || currentPage === -1) &&
+                    page.elements
                       .sort((a, b) => a.z_index - b.z_index)
                       .map((element, index) => (
                         <DraggableElement
@@ -360,9 +365,8 @@ export default function ZineCanvas({
                           onSelect={() => handleImageSelect(element.id)}
                         />
                       ))}
-                  </div>
-                );
-              })}
+                </div>
+              ))}
             </div>
           </div>
 
