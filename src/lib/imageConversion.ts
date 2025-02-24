@@ -69,3 +69,43 @@ export async function convertAllImagesToWebP(): Promise<{
     errors,
   };
 }
+
+export async function convertPreviewsToWebP(): Promise<{
+  total: number;
+  converted: number;
+  errors: number;
+}> {
+  const supabase = createClient();
+  const { data: pages, error } = await supabase
+    .from("pages")
+    .select("*")
+    .not("preview", "is", null)
+    .not("preview", "ilike", "%.webp%");
+
+  if (error) throw error;
+
+  let converted = 0;
+  let errors = 0;
+
+  for (const page of pages || []) {
+    if (page.preview && !page.preview.startsWith("data:image/webp")) {
+      try {
+        const webpData = await convertImageToWebP(page.preview);
+        await supabase
+          .from("pages")
+          .update({ preview: webpData })
+          .eq("id", page.id);
+        converted++;
+      } catch (error) {
+        console.error(`Error converting preview for page ${page.id}:`, error);
+        errors++;
+      }
+    }
+  }
+
+  return {
+    total: (pages || []).length,
+    converted,
+    errors,
+  };
+}

@@ -171,21 +171,34 @@ export async function generatePreview(
         tempPages.appendChild(pageClone);
 
         try {
-          const imageUrl = await domToJpeg(pageClone, {
+          // Generate JPEG first
+          const jpegUrl = await domToJpeg(pageClone, {
             quality: 0.8,
             width,
             height,
             backgroundColor: "#ffffff",
           });
 
-          pageImages.push(imageUrl);
+          // Convert JPEG to WebP
+          const webpUrl = await convertToWebP(jpegUrl);
+
+          // Calculate and log sizes
+          const jpegSize = calculateDataUrlSize(jpegUrl);
+          const webpSize = calculateDataUrlSize(webpUrl);
+          console.log(`Page ${i + 1} sizes:`, {
+            jpeg: `${(jpegSize / 1024).toFixed(2)} KB`,
+            webp: `${(webpSize / 1024).toFixed(2)} KB`,
+            reduction: `${((1 - webpSize / jpegSize) * 100).toFixed(1)}%`,
+          });
+
+          pageImages.push(webpUrl);
 
           // Save preview to database if requested
           if (saveToDb && pageIds[i]) {
             const supabase = createClient();
             await supabase
               .from("pages")
-              .update({ preview: imageUrl })
+              .update({ preview: webpUrl })
               .eq("id", pageIds[i]);
           }
         } catch (error) {
@@ -200,4 +213,29 @@ export async function generatePreview(
   }
 
   return pageImages;
+}
+
+// Helper function to convert JPEG to WebP
+function convertToWebP(jpegDataUrl: string): Promise<string> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext("2d")!;
+      ctx.drawImage(img, 0, 0);
+      // Convert to WebP with 0.8 quality
+      const webpDataUrl = canvas.toDataURL("image/webp", 0.8);
+      resolve(webpDataUrl);
+    };
+    img.src = jpegDataUrl;
+  });
+}
+
+// Helper function to calculate size of data URL in bytes
+function calculateDataUrlSize(dataUrl: string): number {
+  const base64 = dataUrl.split(",")[1];
+  const padding = base64.length % 4 ? 4 - (base64.length % 4) : 0;
+  return (base64.length + padding) * 0.75;
 }
