@@ -17,7 +17,7 @@ import { DraggableElement } from "./DraggableElement";
 import { generatePreview as generateZinePreview } from "@/lib/zine";
 import { Element } from "@/types/zine";
 import { createElement } from "@/lib/element";
-import { VerticalToolbar } from "./ImageFilterMenu";
+import { VerticalToolbar } from "./VerticalToolbar";
 import Thumbnail from "@/components/Thumbnail";
 
 interface ZineCanvasProps {
