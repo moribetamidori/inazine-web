@@ -386,7 +386,11 @@ export async function addText(
               ...page,
               elements: [
                 ...page.elements,
-                { ...newElement, type: newElement.type as "text" | "image", filter: "none" },
+                {
+                  ...newElement,
+                  type: newElement.type as "text" | "image",
+                  filter: "none",
+                },
               ],
             }
           : page
@@ -417,10 +421,42 @@ export async function addImage(
         const reader = new FileReader();
         reader.onload = async (e) => {
           try {
+            // Create an image element to load the original image
+            const img = new Image();
+            img.src = e.target?.result as string;
+
+            await new Promise((resolve) => (img.onload = resolve));
+
+            // Create a canvas to convert the image
+            const canvas = document.createElement("canvas");
+            canvas.width = img.width;
+            canvas.height = img.height;
+
+            const ctx = canvas.getContext("2d");
+            if (!ctx) throw new Error("Could not get canvas context");
+
+            ctx.drawImage(img, 0, 0);
+
+            // Convert to WebP
+            const webpData = canvas.toDataURL("image/webp", 0.8);
+
+            // Log size comparison
+            const originalSize = Math.round(
+              (e.target?.result as string).length / 1024
+            );
+            const webpSize = Math.round(webpData.length / 1024);
+            console.log(`Original size: ${originalSize}KB`);
+            console.log(`WebP size: ${webpSize}KB`);
+            console.log(
+              `Size reduction: ${Math.round(
+                ((originalSize - webpSize) / originalSize) * 100
+              )}%`
+            );
+
             const newElement = await createElement({
               page_id: pageId,
               type: "image",
-              content: e.target?.result as string,
+              content: webpData,
               position_x: width / 2 - 100,
               position_y: height / 2 - 100,
               scale: 1,
@@ -461,7 +497,6 @@ export async function addImage(
     input.click();
   });
 }
-
 
 export async function handleUpdateFilter(
   id: string,
