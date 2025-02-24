@@ -92,21 +92,26 @@ export function DraggableElement({
     }
   }, [element]);
 
-  // Add keyboard event listener for delete
+  // Update the keyboard event listener to handle both delete and copy
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (
-        (e.key === "Delete" || e.key === "Backspace") &&
-        isSelected &&
-        !isEditing
-      ) {
-        onDelete(element.id);
+      if (isSelected && !isEditing) {
+        // Handle delete
+        if (e.key === "Delete" || e.key === "Backspace") {
+          onDelete(element.id);
+        }
+
+        // Handle copy
+        if ((e.metaKey || e.ctrlKey) && e.key === "c") {
+          e.preventDefault();
+          onCopy();
+        }
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isSelected, isEditing, element.id, onDelete]);
+  }, [isSelected, isEditing, element.id, onDelete, onCopy]);
 
   const handleDragStop = (e: DraggableEvent, data: DraggableData) => {
     const elementWidth = nodeRef.current?.offsetWidth || 0;
@@ -188,12 +193,6 @@ export function DraggableElement({
               >
                 ↓
               </button>
-              <button
-                onClick={onCopy}
-                className="text-blue-500 hover:text-blue-700"
-              >
-                Copy
-              </button>
             </div>
 
             <div className="min-w-[100px] p-2 relative text-[28px]">
@@ -245,13 +244,6 @@ export function DraggableElement({
                 }`}
               >
                 ↓
-              </button>
-
-              <button
-                onClick={onCopy}
-                className="text-blue-500 hover:text-blue-700"
-              >
-                Copy
               </button>
             </div>
             {imageDimensions.width > 0 && (
