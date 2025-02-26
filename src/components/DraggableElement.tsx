@@ -48,7 +48,6 @@ export function DraggableElement({
   onCopy,
   isSelected,
   onSelect,
-  handlePaste,
 }: DraggableElementProps) {
   const nodeRef = useRef<HTMLDivElement>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -105,17 +104,15 @@ export function DraggableElement({
       if (isSelected && !isEditing) {
         // Handle delete
         if (e.key === "Delete" || e.key === "Backspace") {
+          e.preventDefault();
           onDelete(element.id);
         }
 
         // Handle copy
         if ((e.metaKey || e.ctrlKey) && e.key === "c") {
           e.preventDefault();
+          console.log("Copying element:", element); // Debug log
           onCopy();
-        }
-        if ((e.metaKey || e.ctrlKey) && e.key === "v") {
-          e.preventDefault();
-          handlePaste();
         }
 
         // Handle layer movement
@@ -141,6 +138,7 @@ export function DraggableElement({
     onMoveLayer,
     isTopLayer,
     isBottomLayer,
+    element, // Add element to dependencies
   ]);
 
   const handleDragStop = (e: DraggableEvent, data: DraggableData) => {

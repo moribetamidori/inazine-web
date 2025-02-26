@@ -208,20 +208,32 @@ export default function ZineCanvas({
   };
 
   const handleCopy = (element: Element) => {
+    console.log("Setting copied element:", element); // Debug log
     setCopiedElement(element);
   };
 
   const handlePaste = useCallback(async () => {
-    if (!copiedElement || !pages[currentPage]?.id) return;
+    console.log("Attempting to paste, copiedElement:", copiedElement); // Debug log
+    if (!copiedElement || !pages[currentPage]?.id) {
+      console.log("Cannot paste - missing copiedElement or invalid page"); // Debug log
+      return;
+    }
 
     const newElement = {
       ...copiedElement,
       id: `copy-${Date.now()}`,
-      position_x: copiedElement.position_x + 10,
-      position_y: copiedElement.position_y + 10,
+      position_x: Math.min(
+        copiedElement.position_x,
+        width - (copiedElement.width || 100)
+      ),
+      position_y: Math.min(
+        copiedElement.position_y,
+        height - (copiedElement.height || 100)
+      ),
     };
 
     try {
+      console.log("Creating new element:", newElement); // Debug log
       const createdElement = await createElement({
         page_id: pages[currentPage].id,
         type: newElement.type,
@@ -241,17 +253,32 @@ export default function ZineCanvas({
         filter: createdElement.filter as string,
       };
 
-      setPages(
-        pages.map((page, index) =>
+      setPages((prevPages) =>
+        prevPages.map((page, index) =>
           index === currentPage
             ? { ...page, elements: [...page.elements, typedElement] }
             : page
         )
       );
+      console.log("Element pasted successfully"); // Debug log
     } catch (error) {
       console.error("Error pasting element:", error);
     }
-  }, [copiedElement, pages, currentPage]);
+  }, [copiedElement, pages, currentPage, width, height]);
+
+  // Move the keyboard event listener higher in the component
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "v" && copiedElement) {
+        e.preventDefault();
+        console.log("Paste shortcut detected"); // Debug log
+        handlePaste();
+      }
+    };
+
+    window.addEventListener("keydown", handleGlobalKeyDown);
+    return () => window.removeEventListener("keydown", handleGlobalKeyDown);
+  }, [copiedElement, handlePaste]);
 
   const handleImageSelect = (elementId: string) => {
     setSelectedImageId(elementId);
