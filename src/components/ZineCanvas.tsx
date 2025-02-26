@@ -278,6 +278,40 @@ export default function ZineCanvas({
     }
   };
 
+  const addSticker = async (stickerUrl: string) => {
+    if (!pages[currentPage]?.id) return;
+
+    try {
+      const element = await createElement({
+        page_id: pages[currentPage].id,
+        type: "image",
+        content: stickerUrl,
+        position_x: width / 2 - 50, // Center the sticker
+        position_y: height / 2 - 50,
+        width: 100, // Default size for stickers
+        height: 100,
+        scale: 1,
+        z_index: pages[currentPage].elements.length + 1,
+        filter: "none",
+      });
+
+      const typedElement: Element = {
+        ...element,
+        type: element.type as "text" | "image",
+        filter: element.filter as string,
+      };
+
+      setPages(
+        pages.map((page, index) =>
+          index === currentPage
+            ? { ...page, elements: [...page.elements, typedElement] }
+            : page
+        )
+      );
+    } catch (error) {
+      console.error("Error adding sticker:", error);
+    }
+  };
 
   return (
     <div className="relative rounded-lg h-screen">
@@ -395,6 +429,7 @@ export default function ZineCanvas({
               isLoadingPreview={isLoadingPreview}
               scale={scale}
               setScale={setScale}
+              addSticker={addSticker}
             />
           </div>
         </div>
