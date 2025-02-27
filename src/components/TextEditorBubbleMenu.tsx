@@ -1,5 +1,5 @@
 import { Editor, BubbleMenu } from "@tiptap/react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface TextEditorBubbleMenuProps {
   editor: Editor;
@@ -15,12 +15,34 @@ const FONT_FAMILIES = [
 ];
 
 export function TextEditorBubbleMenu({ editor }: TextEditorBubbleMenuProps) {
-  const [inputValue, setInputValue] = useState("16");
-  const [fontSize, setFontSize] = useState("16");
+  const getFontSize = () => {
+    const fontSize = editor.getAttributes("textStyle").fontSize;
+    return fontSize ? fontSize.replace("px", "") : "28";
+  };
+
+  const [inputValue, setInputValue] = useState(getFontSize);
+  const [fontSize, setFontSize] = useState(getFontSize);
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [currentColor, setCurrentColor] = useState("#000000");
   const [currentFont, setCurrentFont] = useState("Inter");
   const [showFontDropdown, setShowFontDropdown] = useState(false);
+
+  // Update font size when selection changes
+  useEffect(() => {
+    const updateFontSize = () => {
+      const newSize = getFontSize();
+      setFontSize(newSize);
+      setInputValue(newSize);
+    };
+
+    editor.on("selectionUpdate", updateFontSize);
+    editor.on("transaction", updateFontSize);
+
+    return () => {
+      editor.off("selectionUpdate", updateFontSize);
+      editor.off("transaction", updateFontSize);
+    };
+  }, [editor]);
 
   const handleFontSizeChange = (size: string) => {
     const sizeNumber = parseInt(size);
