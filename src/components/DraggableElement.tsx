@@ -101,7 +101,10 @@ export function DraggableElement({
   useEffect(() => {
     console.log("isEditing?", isEditing);
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (isSelected && !isEditing) {
+      // Add check for active element type
+      const isInputFocused = document.activeElement?.tagName === "INPUT";
+
+      if (isSelected && !isEditing && !isInputFocused) {
         // Handle delete
         if (e.key === "Delete" || e.key === "Backspace") {
           e.preventDefault();
@@ -138,7 +141,7 @@ export function DraggableElement({
     onMoveLayer,
     isTopLayer,
     isBottomLayer,
-    element, // Add element to dependencies
+    element,
   ]);
 
   const handleDragStop = (e: DraggableEvent, data: DraggableData) => {
