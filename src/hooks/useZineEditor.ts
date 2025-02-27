@@ -5,6 +5,8 @@ import { FontSize } from "@tiptap/extension-font-size";
 import { Color } from "@tiptap/extension-color";
 import { FontFamily } from "@tiptap/extension-font-family";
 import TextAlign from "@tiptap/extension-text-align";
+import { Extension } from "@tiptap/core";
+import { Plugin, PluginKey } from "prosemirror-state";
 
 interface UseZineEditorProps {
   content: string;
@@ -14,6 +16,75 @@ interface UseZineEditorProps {
   onUpdateContent: (id: string, content: string) => void;
   onEditingEnd?: () => void;
 }
+
+// Create a custom extension to handle font styling
+const FontHandlerExtension = Extension.create({
+  name: "fontHandler",
+  addProseMirrorPlugins() {
+    return [
+      new Plugin({
+        key: new PluginKey("fontHandler"),
+        appendTransaction: (transactions, oldState, newState) => {
+          // Skip if no transactions
+          if (!transactions.some((tr) => tr.docChanged)) return null;
+
+          // Get the transaction
+          const tr = newState.tr;
+          let modified = false;
+
+          // Find text nodes that have style changes but lost font family
+          newState.doc.descendants((node, pos) => {
+            if (node.type.name === "text") {
+              const marks = node.marks;
+              const hasStyle = marks.some(
+                (mark) =>
+                  mark.type.name === "bold" || mark.type.name === "italic"
+              );
+              const hasFontFamily = marks.some(
+                (mark) =>
+                  mark.type.name === "textStyle" && mark.attrs.fontFamily
+              );
+
+              // Check if this node was in a transaction that changed
+              const wasInTransaction = transactions.some((transaction) => {
+                const positions = transaction.steps.map(
+                  (step) => step.from || step.pos
+                );
+                return positions.some(
+                  (p) => p >= pos && p <= pos + node.nodeSize
+                );
+              });
+
+              // Only process nodes that were part of transactions
+              if (hasStyle && !hasFontFamily && wasInTransaction) {
+                // Try to find font family from previous state
+                const oldNode = oldState.doc.nodeAt(pos);
+                if (oldNode) {
+                  const oldFontFamily = oldNode.marks.find(
+                    (mark) =>
+                      mark.type.name === "textStyle" && mark.attrs.fontFamily
+                  )?.attrs.fontFamily;
+
+                  if (oldFontFamily) {
+                    // Preserve font family
+                    const textStyleMark =
+                      newState.schema.marks.textStyle.create({
+                        fontFamily: oldFontFamily,
+                      });
+                    tr.addMark(pos, pos + node.nodeSize, textStyleMark);
+                    modified = true;
+                  }
+                }
+              }
+            }
+          });
+
+          return modified ? tr : null;
+        },
+      }),
+    ];
+  },
+});
 
 export function useZineEditor({
   content,
@@ -48,6 +119,7 @@ export function useZineEditor({
         types: ["heading", "paragraph"],
         alignments: ["left", "center", "right"],
       }),
+      FontHandlerExtension,
     ],
     content,
     editable: isEditing,

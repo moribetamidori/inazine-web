@@ -20,27 +20,40 @@ export function TextEditorBubbleMenu({ editor }: TextEditorBubbleMenuProps) {
     return fontSize ? fontSize.replace("px", "") : "28";
   };
 
+  const getCurrentFont = () => {
+    return editor.getAttributes("textStyle").fontFamily || "Inter";
+  };
+
   const [inputValue, setInputValue] = useState(getFontSize);
   const [fontSize, setFontSize] = useState(getFontSize);
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [currentColor, setCurrentColor] = useState("#000000");
-  const [currentFont, setCurrentFont] = useState("Inter");
+  const [currentFont, setCurrentFont] = useState(getCurrentFont);
   const [showFontDropdown, setShowFontDropdown] = useState(false);
 
-  // Update font size when selection changes
+  // Update state when selection changes
   useEffect(() => {
-    const updateFontSize = () => {
+    const updateState = () => {
+      // Update font size
       const newSize = getFontSize();
       setFontSize(newSize);
       setInputValue(newSize);
+
+      // Update font family
+      const fontFamily = getCurrentFont();
+      setCurrentFont(fontFamily);
+
+      // Update color
+      const color = editor.getAttributes("textStyle").color || "#000000";
+      setCurrentColor(color);
     };
 
-    editor.on("selectionUpdate", updateFontSize);
-    editor.on("transaction", updateFontSize);
+    editor.on("selectionUpdate", updateState);
+    editor.on("transaction", updateState);
 
     return () => {
-      editor.off("selectionUpdate", updateFontSize);
-      editor.off("transaction", updateFontSize);
+      editor.off("selectionUpdate", updateState);
+      editor.off("transaction", updateState);
     };
   }, [editor]);
 
@@ -48,7 +61,15 @@ export function TextEditorBubbleMenu({ editor }: TextEditorBubbleMenuProps) {
     const sizeNumber = parseInt(size);
     if (!isNaN(sizeNumber) && sizeNumber > 0) {
       setFontSize(size);
+
+      // Combine with existing attributes
+      const attrs = editor.getAttributes("textStyle");
       editor.chain().focus().setFontSize(`${size}px`).run();
+
+      // Ensure font family is preserved
+      if (attrs.fontFamily) {
+        editor.chain().focus().setFontFamily(attrs.fontFamily).run();
+      }
     }
   };
 
@@ -56,6 +77,29 @@ export function TextEditorBubbleMenu({ editor }: TextEditorBubbleMenuProps) {
     if (e.key === "Enter") {
       handleFontSizeChange(inputValue);
     }
+  };
+
+  // Apply a combined style change that preserves all attributes
+  const applyStyleChange = (styleChange: () => void) => {
+    // Save current text style attributes
+    const currentAttrs = editor.getAttributes("textStyle");
+
+    // Apply the requested style change
+    styleChange();
+
+    // Re-apply all text style attributes to ensure they're not lost
+    // Wait a tiny bit to ensure the style change has been processed
+    setTimeout(() => {
+      if (currentAttrs.fontFamily) {
+        editor.chain().focus().setFontFamily(currentAttrs.fontFamily).run();
+      }
+      if (currentAttrs.fontSize) {
+        editor.chain().focus().setFontSize(currentAttrs.fontSize).run();
+      }
+      if (currentAttrs.color) {
+        editor.chain().focus().setColor(currentAttrs.color).run();
+      }
+    }, 20);
   };
 
   return (
@@ -69,18 +113,24 @@ export function TextEditorBubbleMenu({ editor }: TextEditorBubbleMenuProps) {
       className="bg-white shadow-lg rounded-lg p-2 flex gap-2 z-50 items-center"
     >
       <button
-        onClick={() => editor.chain().focus().toggleBold().run()}
+        onClick={() =>
+          applyStyleChange(() => editor.chain().focus().toggleBold().run())
+        }
         className={`px-2 py-1 rounded ${
           editor.isActive("bold") ? "bg-gray-200" : "hover:bg-gray-100"
         }`}
+        style={{ fontFamily: currentFont }}
       >
         B
       </button>
       <button
-        onClick={() => editor.chain().focus().toggleItalic().run()}
+        onClick={() =>
+          applyStyleChange(() => editor.chain().focus().toggleItalic().run())
+        }
         className={`px-2 py-1 rounded ${
           editor.isActive("italic") ? "bg-gray-200" : "hover:bg-gray-100"
         }`}
+        style={{ fontFamily: currentFont }}
       >
         I
       </button>
@@ -94,7 +144,11 @@ export function TextEditorBubbleMenu({ editor }: TextEditorBubbleMenuProps) {
       </button> */}
       <div className="flex gap-1 border-l border-gray-200 pl-2">
         <button
-          onClick={() => editor.chain().focus().setTextAlign("left").run()}
+          onClick={() =>
+            applyStyleChange(() =>
+              editor.chain().focus().setTextAlign("left").run()
+            )
+          }
           className={`px-2 py-1 rounded ${
             editor.isActive({ textAlign: "left" })
               ? "bg-gray-200"
@@ -105,7 +159,11 @@ export function TextEditorBubbleMenu({ editor }: TextEditorBubbleMenuProps) {
           ←
         </button>
         <button
-          onClick={() => editor.chain().focus().setTextAlign("center").run()}
+          onClick={() =>
+            applyStyleChange(() =>
+              editor.chain().focus().setTextAlign("center").run()
+            )
+          }
           className={`px-2 py-1 rounded ${
             editor.isActive({ textAlign: "center" })
               ? "bg-gray-200"
@@ -116,7 +174,11 @@ export function TextEditorBubbleMenu({ editor }: TextEditorBubbleMenuProps) {
           ↔
         </button>
         <button
-          onClick={() => editor.chain().focus().setTextAlign("right").run()}
+          onClick={() =>
+            applyStyleChange(() =>
+              editor.chain().focus().setTextAlign("right").run()
+            )
+          }
           className={`px-2 py-1 rounded ${
             editor.isActive({ textAlign: "right" })
               ? "bg-gray-200"
@@ -148,7 +210,9 @@ export function TextEditorBubbleMenu({ editor }: TextEditorBubbleMenuProps) {
               onChange={(e) => {
                 const newColor = e.target.value;
                 setCurrentColor(newColor);
-                editor.chain().focus().setColor(newColor).run();
+                applyStyleChange(() =>
+                  editor.chain().focus().setColor(newColor).run()
+                );
               }}
               className="w-8 h-8 cursor-pointer"
             />
@@ -175,7 +239,10 @@ export function TextEditorBubbleMenu({ editor }: TextEditorBubbleMenuProps) {
                 <button
                   key={font.value}
                   onClick={() => {
-                    editor.chain().focus().setFontFamily(font.value).run();
+                    // Apply font while preserving other styles
+                    applyStyleChange(() => {
+                      editor.chain().focus().setFontFamily(font.value).run();
+                    });
                     setCurrentFont(font.value);
                     setShowFontDropdown(false);
                   }}
