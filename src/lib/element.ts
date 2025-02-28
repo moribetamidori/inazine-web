@@ -421,9 +421,43 @@ export async function addImage(
         const reader = new FileReader();
         reader.onload = async (e) => {
           try {
-            // Create an image element to load the original image
+            let imgSrc = e.target?.result as string;
+
+            // Check if the file is HEIC format
+            const isHeic =
+              file.type === "image/heic" ||
+              file.name.toLowerCase().endsWith(".heic") ||
+              file.name.toLowerCase().endsWith(".heif");
+
+            if (isHeic) {
+              // For HEIC conversion, we need to dynamically import the heic2any library
+              try {
+                const heic2any = (await import("heic2any")).default;
+
+                // Convert HEIC to PNG blob
+                const pngBlob = await heic2any({
+                  blob: file,
+                  toType: "image/png",
+                  quality: 0.8,
+                });
+
+                // Convert blob to data URL
+                imgSrc = await new Promise<string>((resolve) => {
+                  const reader = new FileReader();
+                  reader.onloadend = () => resolve(reader.result as string);
+                  reader.readAsDataURL(pngBlob as Blob);
+                });
+
+                console.log("Successfully converted HEIC to PNG");
+              } catch (heicError) {
+                console.error("Error converting HEIC image:", heicError);
+                // Continue with original format if conversion fails
+              }
+            }
+
+            // Create an image element to load the image
             const img = new Image();
-            img.src = e.target?.result as string;
+            img.src = imgSrc;
 
             await new Promise((resolve) => (img.onload = resolve));
 
@@ -441,9 +475,7 @@ export async function addImage(
             const webpData = canvas.toDataURL("image/webp", 0.8);
 
             // Log size comparison
-            const originalSize = Math.round(
-              (e.target?.result as string).length / 1024
-            );
+            const originalSize = Math.round(imgSrc.length / 1024);
             const webpSize = Math.round(webpData.length / 1024);
             console.log(`Original size: ${originalSize}KB`);
             console.log(`WebP size: ${webpSize}KB`);
