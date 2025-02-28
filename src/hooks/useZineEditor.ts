@@ -47,9 +47,24 @@ const FontHandlerExtension = Extension.create({
 
               // Check if this node was in a transaction that changed
               const wasInTransaction = transactions.some((transaction) => {
-                const positions = transaction.steps.map(
-                  (step) => step.from || step.pos
-                );
+                interface StepWithFrom {
+                  from: number;
+                }
+                interface StepWithPos {
+                  pos: number;
+                }
+
+                const positions = transaction.steps
+                  .map((step) => {
+                    if ("from" in step) {
+                      return (step as StepWithFrom).from;
+                    } else if ("pos" in step) {
+                      return (step as StepWithPos).pos;
+                    }
+                    return null;
+                  })
+                  .filter((p): p is number => p !== null);
+
                 return positions.some(
                   (p) => p >= pos && p <= pos + node.nodeSize
                 );
