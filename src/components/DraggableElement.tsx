@@ -31,6 +31,10 @@ interface DraggableElementProps {
   isSelected: boolean;
   onSelect: () => void;
   handlePaste: () => void;
+  onUpdateCrop?: (
+    id: string,
+    crop: { top: number; right: number; bottom: number; left: number }
+  ) => void;
 }
 
 export function DraggableElement({
@@ -48,14 +52,28 @@ export function DraggableElement({
   onCopy,
   isSelected,
   onSelect,
+  onUpdateCrop,
 }: DraggableElementProps) {
   const nodeRef = useRef<HTMLDivElement>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
+  const [isCropping, setIsCropping] = useState(false);
+  const [cropStartPosition, setCropStartPosition] = useState({ x: 0, y: 0 });
+  const cropSideRef = useRef<"top" | "right" | "bottom" | "left" | null>(null);
   const [imageDimensions, setImageDimensions] = useState({
     width: 0,
     height: 0,
   });
+
+  // Initialize crop values from element.crop if it exists, otherwise use defaults
+  const [cropValues, setCropValues] = useState(
+    element.crop || {
+      top: 0,
+      right: 0,
+      bottom: 0,
+      left: 0,
+    }
+  );
 
   const editor = useZineEditor({
     content: element.content,
@@ -182,6 +200,131 @@ export function DraggableElement({
     });
   };
 
+  const handleCropStart = (
+    side: "top" | "right" | "bottom" | "left",
+    e: React.MouseEvent
+  ) => {
+    if (!nodeRef.current || element.type !== "image") return;
+
+    console.log("CROP START:", side);
+    e.stopPropagation();
+    e.preventDefault();
+
+    // Fully reset crop state before starting new crop
+    setIsCropping(true);
+    cropSideRef.current = side;
+
+    // Save the initial mouse position and initial crop values
+    const initialMousePosition = { x: e.clientX, y: e.clientY };
+    const initialCropValues = { ...cropValues };
+    setCropStartPosition(initialMousePosition);
+
+    // Define the move and end handlers within this closure to ensure they have access to the current state
+    const handleMove = (moveEvent: MouseEvent) => {
+      if (!cropSideRef.current) return;
+
+      // Calculate deltas relative to the initial position instead of the last position
+      const deltaX = (moveEvent.clientX - initialMousePosition.x) / scale;
+      const deltaY = (moveEvent.clientY - initialMousePosition.y) / scale;
+
+      console.log("CROP MOVE:", {
+        side: cropSideRef.current,
+        deltaX,
+        deltaY,
+        currentCrop: cropValues,
+      });
+
+      // Create a new object for the updated crop values, starting from initial values
+      const newCropValues = { ...initialCropValues };
+      const minVisible = 20;
+      const maxWidth = element.width || imageDimensions.width;
+      const maxHeight = element.height || imageDimensions.height;
+
+      switch (cropSideRef.current) {
+        case "left":
+          newCropValues.left = Math.max(
+            0,
+            Math.min(
+              maxWidth - minVisible - newCropValues.right,
+              initialCropValues.left + deltaX
+            )
+          );
+          break;
+        case "right":
+          newCropValues.right = Math.max(
+            0,
+            Math.min(
+              maxWidth - minVisible - newCropValues.left,
+              initialCropValues.right - deltaX
+            )
+          );
+          break;
+        case "top":
+          newCropValues.top = Math.max(
+            0,
+            Math.min(
+              maxHeight - minVisible - newCropValues.bottom,
+              initialCropValues.top + deltaY
+            )
+          );
+          break;
+        case "bottom":
+          newCropValues.bottom = Math.max(
+            0,
+            Math.min(
+              maxHeight - minVisible - newCropValues.top,
+              initialCropValues.bottom - deltaY
+            )
+          );
+          break;
+      }
+
+      console.log("NEW CROP VALUES:", newCropValues);
+
+      // Update state
+      setCropValues(newCropValues);
+
+      // Notify parent component
+      if (onUpdateCrop) {
+        onUpdateCrop(element.id, newCropValues);
+      }
+    };
+
+    const handleEnd = () => {
+      console.log("CROP END:", cropValues);
+
+      if (element.type === "image") {
+        finalizeCrop();
+      }
+
+      // Reset crop-related state
+      setIsCropping(false);
+      cropSideRef.current = null;
+
+      // Clean up listeners
+      document.removeEventListener("mousemove", handleMove);
+      document.removeEventListener("mouseup", handleEnd);
+    };
+
+    // Add event listeners
+    document.addEventListener("mousemove", handleMove);
+    document.addEventListener("mouseup", handleEnd);
+  };
+
+  // A simplified function to finalize the crop
+  const finalizeCrop = () => {
+    if (element.type !== "image") return;
+
+    // Only call onUpdateCrop if it exists
+    if (onUpdateCrop) {
+      onUpdateCrop(element.id, cropValues);
+    }
+
+    // For now, we'll just keep using the local state cropValues
+    // until you implement the database changes
+    console.log("Crop finalized:", cropValues);
+  };
+
   return (
     <Draggable
       nodeRef={nodeRef as RefObject<HTMLElement>}
@@ -189,7 +332,7 @@ export function DraggableElement({
       scale={scale}
       onStop={handleDragStop}
       bounds="parent"
-      disabled={isEditing}
+      disabled={isEditing || isCropping}
     >
       <div
         ref={nodeRef}
@@ -246,18 +389,57 @@ export function DraggableElement({
                     element.filter ? `filter-${element.filter}` : ""
                   }`}
                   onClick={handleDoubleClick}
+                  style={{
+                    width:
+                      (element.width || imageDimensions.width) -
+                      cropValues.left -
+                      cropValues.right,
+                    height:
+                      (element.height || imageDimensions.height) -
+                      cropValues.top -
+                      cropValues.bottom,
+                    overflow: "hidden",
+                    position: "relative",
+                  }}
                 >
                   <Image
                     src={element.content}
                     alt="User uploaded"
                     width={element.width || imageDimensions.width}
                     height={element.height || imageDimensions.height}
-                    className="object-contain"
-                    style={{ pointerEvents: "none" }}
+                    className="object-cover"
+                    style={{
+                      pointerEvents: "none",
+                      position: "absolute",
+                      top: -cropValues.top,
+                      left: -cropValues.left,
+                      bottom: -cropValues.bottom,
+                      right: -cropValues.right,
+                      maxWidth: "none", // Allow image to exceed container
+                    }}
                   />
+
+                  {/* Display current displayed dimensions */}
+                  {isSelected && (
+                    <div className="absolute top-2 left-2 bg-black bg-opacity-70 text-white px-2 py-1 rounded text-xs">
+                      {Math.round(
+                        (element.width || imageDimensions.width) -
+                          cropValues.left -
+                          cropValues.right
+                      )}{" "}
+                      ×{" "}
+                      {Math.round(
+                        (element.height || imageDimensions.height) -
+                          cropValues.top -
+                          cropValues.bottom
+                      )}{" "}
+                      px
+                    </div>
+                  )}
                 </div>
                 {element.type === "image" && isSelected && (
                   <>
+                    {/* Corner resize handles */}
                     <div
                       className="absolute w-5 h-5 bg-white border-2 border-black rounded-full cursor-nw-resize -top-2.5 -left-2.5"
                       onMouseDown={(e) =>
@@ -281,6 +463,24 @@ export function DraggableElement({
                       onMouseDown={(e) =>
                         handleResize("bottomRight", e.nativeEvent)
                       }
+                    />
+
+                    {/* Crop handles on the middle of each side */}
+                    <div
+                      className="absolute h-5 w-12 bg-white border-2 border-black rounded-full cursor-ns-resize top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10"
+                      onMouseDown={(e) => handleCropStart("top", e)}
+                    />
+                    <div
+                      className="absolute h-5 w-12 bg-white border-2 border-black rounded-full cursor-ns-resize bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 z-10"
+                      onMouseDown={(e) => handleCropStart("bottom", e)}
+                    />
+                    <div
+                      className="absolute w-5 h-12 bg-white border-2 border-black rounded-full cursor-ew-resize left-0 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10"
+                      onMouseDown={(e) => handleCropStart("left", e)}
+                    />
+                    <div
+                      className="absolute w-5 h-12 bg-white border-2 border-black rounded-full cursor-ew-resize right-0 top-1/2 translate-x-1/2 -translate-y-1/2 z-10"
+                      onMouseDown={(e) => handleCropStart("right", e)}
                     />
                   </>
                 )}
