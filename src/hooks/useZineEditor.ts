@@ -136,8 +136,14 @@ export function useZineEditor({
       }),
       FontHandlerExtension,
     ],
+    editorProps: {
+      attributes: {
+        class: "focus:outline-none",
+      },
+    },
     content,
     editable: isEditing,
+    immediatelyRender: false,
     onCreate: ({ editor }) => {
       if (elementType === "text") {
         onUpdateContent(elementId, editor.getHTML());
