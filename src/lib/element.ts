@@ -450,7 +450,6 @@ export async function addImage(
                   reader.readAsDataURL(pngBlob as Blob);
                 });
 
-                console.log("Successfully converted HEIC to PNG");
               } catch (heicError) {
                 console.error("Error converting HEIC image:", heicError);
                 // Continue with original format if conversion fails
@@ -477,15 +476,15 @@ export async function addImage(
             const webpData = canvas.toDataURL("image/webp", 0.8);
 
             // Log size comparison
-            const originalSize = Math.round(imgSrc.length / 1024);
-            const webpSize = Math.round(webpData.length / 1024);
-            console.log(`Original size: ${originalSize}KB`);
-            console.log(`WebP size: ${webpSize}KB`);
-            console.log(
-              `Size reduction: ${Math.round(
-                ((originalSize - webpSize) / originalSize) * 100
-              )}%`
-            );
+            // const originalSize = Math.round(imgSrc.length / 1024);
+            // const webpSize = Math.round(webpData.length / 1024);
+            // console.log(`Original size: ${originalSize}KB`);
+            // console.log(`WebP size: ${webpSize}KB`);
+            // console.log(
+            //   `Size reduction: ${Math.round(
+            //     ((originalSize - webpSize) / originalSize) * 100
+            //   )}%`
+            // );
 
             const newElement = await createElement({
               page_id: pageId,

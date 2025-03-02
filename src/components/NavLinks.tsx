@@ -18,9 +18,6 @@ export default function NavLinks({
   const isExplore = pathname.includes("/explore");
   const isFeed = pathname === "/home";
   const isEdit = pathname.includes(`/${user.id}/${zineId}`);
-  console.log(zineTitle);
-  console.log(isExplore);
-  console.log(isProfile);
 
   return (
     <div className="mb-2">

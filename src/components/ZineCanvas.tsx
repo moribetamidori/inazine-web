@@ -44,16 +44,6 @@ export default function ZineCanvas({
   const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
 
-  // Add logging for page changes
-  useEffect(() => {
-    console.log("Current page changed:", {
-      currentPage,
-      totalPages: pages.length,
-      visiblePageId: pages[currentPage]?.id,
-    });
-  }, [currentPage, pages]);
-
-  // Handle zoom with trackpad/mouse wheel
   const handleWheel = (e: WheelEvent) => {
     if (e.ctrlKey || e.metaKey) {
       e.preventDefault();
@@ -209,14 +199,11 @@ export default function ZineCanvas({
   };
 
   const handleCopy = (element: Element) => {
-    console.log("Setting copied element:", element); // Debug log
     setCopiedElement(element);
   };
 
   const handlePaste = useCallback(async () => {
-    console.log("Attempting to paste, copiedElement:", copiedElement); // Debug log
     if (!copiedElement || !pages[currentPage]?.id) {
-      console.log("Cannot paste - missing copiedElement or invalid page"); // Debug log
       return;
     }
 
@@ -268,7 +255,6 @@ export default function ZineCanvas({
             : page
         )
       );
-      console.log("Element pasted successfully"); // Debug log
     } catch (error) {
       console.error("Error pasting element:", error);
     }
@@ -279,7 +265,6 @@ export default function ZineCanvas({
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "v" && copiedElement) {
         e.preventDefault();
-        console.log("Paste shortcut detected"); // Debug log
         handlePaste();
       }
     };

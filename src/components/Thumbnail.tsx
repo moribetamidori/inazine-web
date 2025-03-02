@@ -70,7 +70,6 @@ function SortablePage({
           e.preventDefault();
           e.stopPropagation();
           onClick();
-          console.log("Clicked page:", index);
         }}
         className={`w-full aspect-[3/4] rounded-lg transition-all ${
           isCurrentPage
@@ -93,11 +92,6 @@ export default function Thumbnail({
   addNewPage,
   setPages,
 }: ThumbnailProps) {
-  console.log("Thumbnail render:", {
-    totalPages: pages.length,
-    currentPage,
-    pageIds: pages.map((p) => p.id),
-  });
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -159,7 +153,6 @@ export default function Thumbnail({
                 index={index}
                 isCurrentPage={currentPage === index}
                 onClick={() => {
-                  console.log("Clicking page:", index);
                   setCurrentPage(index);
                 }}
               />

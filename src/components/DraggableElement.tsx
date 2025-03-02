@@ -114,24 +114,18 @@ export function DraggableElement({
     }
   }, [element]);
 
-  // Update the keyboard event listener to handle both delete and copy
   useEffect(() => {
-    console.log("isEditing?", isEditing);
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Add check for active element type
       const isInputFocused = document.activeElement?.tagName === "INPUT";
 
       if (isSelected && !isEditing && !isInputFocused) {
-        // Handle delete
         if (e.key === "Delete" || e.key === "Backspace") {
           e.preventDefault();
           onDelete(element.id);
         }
 
-        // Handle copy
         if ((e.metaKey || e.ctrlKey) && e.key === "c") {
           e.preventDefault();
-          console.log("Copying element:", element); // Debug log
           onCopy();
         }
 
@@ -281,46 +275,21 @@ export function DraggableElement({
 
       // Update state
       setCropValues(newCropValues);
-
-      // Notify parent component
       if (onUpdateCrop) {
         onUpdateCrop(element.id, newCropValues);
       }
+
     };
 
     const handleEnd = () => {
-      console.log("CROP END:", cropValues);
-
-      if (element.type === "image") {
-        finalizeCrop();
-      }
-
-      // Reset crop-related state
       setIsCropping(false);
       cropSideRef.current = null;
-
-      // Clean up listeners
       document.removeEventListener("mousemove", handleMove);
       document.removeEventListener("mouseup", handleEnd);
     };
 
-    // Add event listeners
     document.addEventListener("mousemove", handleMove);
     document.addEventListener("mouseup", handleEnd);
-  };
-
-  // A simplified function to finalize the crop
-  const finalizeCrop = () => {
-    if (element.type !== "image") return;
-
-    // Only call onUpdateCrop if it exists
-    if (onUpdateCrop) {
-      onUpdateCrop(element.id, cropValues);
-    }
-
-    // For now, we'll just keep using the local state cropValues
-    // until you implement the database changes
-    console.log("Crop finalized:", cropValues);
   };
 
   return (
