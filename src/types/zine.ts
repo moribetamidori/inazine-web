@@ -25,4 +25,5 @@ export interface Element {
   created_at?: string;
   updated_at?: string;
   filter: string;
+  crop: { top: number; right: number; bottom: number; left: number } | null;
 }

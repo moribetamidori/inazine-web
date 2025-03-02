@@ -11,6 +11,7 @@ import {
   addText as addTextElement,
   addImage as addImageElement,
   handleUpdateFilter,
+  updateElementCrop,
 } from "@/lib/element";
 import { useZinePages } from "@/hooks/useZinePages";
 import { DraggableElement } from "./DraggableElement";
@@ -245,12 +246,19 @@ export default function ZineCanvas({
         scale: newElement.scale,
         z_index: pages[currentPage].elements.length + 1,
         filter: newElement.filter,
+        crop: null,
       });
 
       const typedElement: Element = {
         ...createdElement,
         type: createdElement.type as "text" | "image",
         filter: createdElement.filter as string,
+        crop: createdElement.crop as {
+          top: number;
+          right: number;
+          bottom: number;
+          left: number;
+        } | null,
       };
 
       setPages((prevPages) =>
@@ -320,12 +328,19 @@ export default function ZineCanvas({
         scale: 1,
         z_index: pages[currentPage].elements.length + 1,
         filter: "none",
+        crop: null,
       });
 
       const typedElement: Element = {
         ...element,
         type: element.type as "text" | "image",
         filter: element.filter as string,
+        crop: element.crop as {
+          top: number;
+          right: number;
+          bottom: number;
+          left: number;
+        } | null,
       };
 
       setPages(
@@ -338,6 +353,13 @@ export default function ZineCanvas({
     } catch (error) {
       console.error("Error adding sticker:", error);
     }
+  };
+
+  const handleUpdateCrop = async (
+    id: string,
+    crop: { top: number; right: number; bottom: number; left: number }
+  ) => {
+    await updateElementCrop(id, crop, pages, currentPage, setPages);
   };
 
   return (
@@ -432,6 +454,7 @@ export default function ZineCanvas({
                           isSelected={element.id === selectedImageId}
                           onSelect={() => handleImageSelect(element.id)}
                           handlePaste={handlePaste}
+                          onUpdateCrop={handleUpdateCrop}
                         />
                       ))}
                 </div>

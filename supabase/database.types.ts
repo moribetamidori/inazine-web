@@ -38,6 +38,7 @@ export type Database = {
         Row: {
           content: string
           created_at: string
+          crop: Json | null
           filter: string | null
           height: number | null
           id: string
@@ -53,6 +54,7 @@ export type Database = {
         Insert: {
           content: string
           created_at?: string
+          crop?: Json | null
           filter?: string | null
           height?: number | null
           id?: string
@@ -68,6 +70,7 @@ export type Database = {
         Update: {
           content?: string
           created_at?: string
+          crop?: Json | null
           filter?: string | null
           height?: number | null
           id?: string

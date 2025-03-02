@@ -377,6 +377,7 @@ export async function addText(
       width: null,
       height: null,
       filter: "none",
+      crop: null,
     });
 
     setPages(
@@ -390,6 +391,7 @@ export async function addText(
                   ...newElement,
                   type: newElement.type as "text" | "image",
                   filter: "none",
+                  crop: null,
                 },
               ],
             }
@@ -496,6 +498,7 @@ export async function addImage(
               width: null,
               height: null,
               filter: "none",
+              crop: null,
             });
 
             setPages(
@@ -509,6 +512,7 @@ export async function addImage(
                           ...newElement,
                           type: newElement.type as "text" | "image",
                           filter: "none",
+                          crop: null,
                         },
                       ],
                     }
@@ -556,5 +560,34 @@ export async function handleUpdateFilter(
     await updateElement(id, { filter });
   } catch (error) {
     console.error("Error updating element filter:", error);
+  }
+}
+
+export async function updateElementCrop(
+  id: string,
+  crop: { top: number; right: number; bottom: number; left: number },
+  pages: Page[],
+  currentPage: number,
+  setPages: (pages: Page[]) => void
+) {
+  // Update local state first
+  setPages(
+    pages.map((page, index) =>
+      index === currentPage
+        ? {
+            ...page,
+            elements: page.elements.map((el) =>
+              el.id === id ? { ...el, crop } : el
+            ),
+          }
+        : page
+    )
+  );
+
+  // Update database
+  try {
+    await updateElement(id, { crop });
+  } catch (error) {
+    console.error("Error updating element crop:", error);
   }
 }

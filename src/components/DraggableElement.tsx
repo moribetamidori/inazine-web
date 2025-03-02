@@ -58,7 +58,6 @@ export function DraggableElement({
   const [isEditing, setIsEditing] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
   const [isCropping, setIsCropping] = useState(false);
-  const [cropStartPosition, setCropStartPosition] = useState({ x: 0, y: 0 });
   const cropSideRef = useRef<"top" | "right" | "bottom" | "left" | null>(null);
   const [imageDimensions, setImageDimensions] = useState({
     width: 0,
@@ -217,7 +216,6 @@ export function DraggableElement({
     // Save the initial mouse position and initial crop values
     const initialMousePosition = { x: e.clientX, y: e.clientY };
     const initialCropValues = { ...cropValues };
-    setCropStartPosition(initialMousePosition);
 
     // Define the move and end handlers within this closure to ensure they have access to the current state
     const handleMove = (moveEvent: MouseEvent) => {
