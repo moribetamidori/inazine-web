@@ -18,6 +18,7 @@ export function useZinePages(zineId: string | undefined) {
               ...el,
               type: el.type as "text" | "image",
               filter: el.filter || "",
+              crop: el.crop as { top: number; right: number; bottom: number; left: number } | null,
             })),
           }))
         );
