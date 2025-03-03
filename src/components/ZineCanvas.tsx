@@ -302,39 +302,48 @@ export default function ZineCanvas({
     if (!pages[currentPage]?.id) return;
 
     try {
-      const element = await createElement({
-        page_id: pages[currentPage].id,
-        type: "image",
-        content: stickerUrl,
-        position_x: width / 2 - 50, // Center the sticker
-        position_y: height / 2 - 50,
-        width: 100, // Default size for stickers
-        height: 100,
-        scale: 1,
-        z_index: pages[currentPage].elements.length + 1,
-        filter: "none",
-        crop: null,
-      });
+      const img = new Image();
+      img.src = stickerUrl;
 
-      const typedElement: Element = {
-        ...element,
-        type: element.type as "text" | "image",
-        filter: element.filter as string,
-        crop: element.crop as {
-          top: number;
-          right: number;
-          bottom: number;
-          left: number;
-        } | null,
+      img.onload = async () => {
+        const aspectRatio = img.naturalWidth / img.naturalHeight;
+        const defaultWidth = 200; // Default width for stickers
+        const defaultHeight = defaultWidth / aspectRatio; // Calculate height based on aspect ratio
+
+        const element = await createElement({
+          page_id: pages[currentPage].id,
+          type: "image",
+          content: stickerUrl,
+          position_x: width / 2 - defaultWidth / 2, // Center the sticker
+          position_y: height / 2 - defaultHeight / 2,
+          width: defaultWidth,
+          height: defaultHeight,
+          scale: 1,
+          z_index: pages[currentPage].elements.length + 1,
+          filter: "none",
+          crop: null,
+        });
+
+        const typedElement: Element = {
+          ...element,
+          type: element.type as "text" | "image",
+          filter: element.filter as string,
+          crop: element.crop as {
+            top: number;
+            right: number;
+            bottom: number;
+            left: number;
+          } | null,
+        };
+
+        setPages(
+          pages.map((page, index) =>
+            index === currentPage
+              ? { ...page, elements: [...page.elements, typedElement] }
+              : page
+          )
+        );
       };
-
-      setPages(
-        pages.map((page, index) =>
-          index === currentPage
-            ? { ...page, elements: [...page.elements, typedElement] }
-            : page
-        )
-      );
     } catch (error) {
       console.error("Error adding sticker:", error);
     }

@@ -47,6 +47,20 @@ const STICKER_COLLECTIONS: StickerCollection[] = [
       // Add more magic stickers
     ],
   },
+    {
+    title: "Travel Stickers",
+    items: [
+      { url: "/stickers/travel/airplane.png", alt: "Airplane" },
+      // { url: "/stickers/travel/bus.png", alt: "Bus" },
+      // { url: "/stickers/travel/train.png", alt: "Train" },
+      // { url: "/stickers/travel/boat.png", alt: "Boat" },
+      // { url: "/stickers/travel/car.png", alt: "Car" },
+      // { url: "/stickers/travel/plane.png", alt: "Plane" },
+      // { url: "/stickers/travel/ship.png", alt: "Ship" },
+      // Add more vintage stickers
+    ],
+  },
+
   // {
   //   title: "Arrow stickers",
   //   items: [
