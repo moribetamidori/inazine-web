@@ -12,19 +12,23 @@ export default function NavLinks({
   const pathname = usePathname();
   const { user } = useAuth();
 
-  if (!user) return null;
-
-  const isProfile = pathname.includes(`/${user.id}/profile`);
+  const isProfile = user && pathname.includes(`/${user.id}/profile`);
   const isExplore = pathname.includes("/explore");
   const isFeed = pathname === "/home";
-  const isEdit = pathname.includes(`/${user.id}/${zineId}`);
+  const isEdit = user && pathname.includes(`/${user.id}/${zineId}`);
 
   return (
     <div className="mb-2">
       <h1 className="text-xl">
-        <Link href="/home" className={isFeed ? "font-bold" : ""}>
-          Inazine / Feed
-        </Link>{" "}
+        {user ? (
+          <Link href="/home" className={isFeed ? "font-bold" : ""}>
+            Inazine / Feed
+          </Link>
+        ) : (
+          <Link href="/" className="font-bold">
+            Inazine
+          </Link>
+        )}{" "}
         ·{" "}
         <Link
           href="/explore"
@@ -32,7 +36,7 @@ export default function NavLinks({
         >
           Explore
         </Link>
-        {!zineTitle && (
+        {user && !zineTitle && (
           <>
             {" "}
             ·{" "}

@@ -1,7 +1,7 @@
 import { useAuth } from "@/contexts/AuthContext";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import UserMenu from "./UserMenu";
 import NavLinks from "./NavLinks";
 import { createZine } from "@/lib/zine";
@@ -11,30 +11,39 @@ interface AuthenticatedLayoutProps {
   onNewZine?: () => void;
   zineTitle?: string;
   zineId?: string;
+  publicAccess?: boolean;
 }
 
 export default function AuthenticatedLayout({
   children,
   zineTitle,
   zineId,
+  publicAccess = false,
 }: AuthenticatedLayoutProps) {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
 
+  // Check if the current path is an explore route
+  const isExploreRoute = pathname.startsWith("/explore");
+
   useEffect(() => {
-    if (!loading && !user) {
+    // Only redirect if not loading, user is not logged in, public access is not allowed,
+    // and it's not an explore route
+    if (!loading && !user && !publicAccess && !isExploreRoute) {
       router.push("/");
     }
-  }, [user, loading, router]);
+  }, [user, loading, router, publicAccess, isExploreRoute]);
 
   if (loading) {
     return <div>Loading...</div>;
   }
 
-  if (!user) return null;
+  // Allow rendering for public routes even without a user
+  if (!user && !publicAccess && !isExploreRoute) return null;
 
   const handleCreateZine = async () => {
     try {
@@ -66,13 +75,23 @@ export default function AuthenticatedLayout({
           />
         </div>
         <div className="flex items-center gap-4">
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="px-4 py-1 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
-          >
-            New zine +
-          </button>
-          <UserMenu />
+          {user ? (
+            <>
+              <button
+                onClick={() => setIsModalOpen(true)}
+                className="px-4 py-1 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+              >
+                New zine +
+              </button>
+              <UserMenu />
+            </>
+          ) : (
+            <Link href="/login">
+              <button className="px-4 py-1 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors">
+                Log in
+              </button>
+            </Link>
+          )}
         </div>
       </header>
 
