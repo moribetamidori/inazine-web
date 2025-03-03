@@ -32,9 +32,16 @@ const FILTERS = [
   { name: "vintage", label: "Vintage" },
   { name: "noir", label: "Noir" },
   { name: "chrome", label: "Chrome" },
-  { name: "fade", label: "Fade" },
-  { name: "warm", label: "Warm" },
-  { name: "cool", label: "Cool" },
+  { name: "sepia", label: "Sepia" },
+  { name: "teal-white", label: "Teal White" },
+  { name: "cherry-icecream", label: "Cherry Icecream" },
+  { name: "purple-warm", label: "Purple Warm" },
+  { name: "gold-sunset", label: "Gold Sunset" },
+  { name: "red-sunset", label: "Red Sunset" },
+  { name: "sea", label: "Sea" },
+  { name: "spring-grass", label: "Spring Grass" },
+  { name: "x-rays", label: "X-Rays" },
+  { name: "grain", label: "Grain" },
 ];
 
 const STICKER_COLLECTIONS: StickerCollection[] = [
