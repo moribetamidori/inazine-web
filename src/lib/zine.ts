@@ -147,7 +147,12 @@ export async function generatePreview(
   const tempPages = document.createElement("div");
   tempPages.style.position = "absolute";
   tempPages.style.left = "-9999px";
+
+  // Important: add to document body to ensure proper rendering context
   document.body.appendChild(tempPages);
+
+  // Get SVG filters from document
+  const svgFilters = document.querySelector('svg[aria-hidden="true"]');
 
   let pageIds: string[] = [];
   if (saveToDb) {
@@ -164,16 +169,42 @@ export async function generatePreview(
     for (let i = 0; i < pages.length; i++) {
       const pageRef = pages[i];
       if (pageRef) {
+        // Create temp container for each page with proper SVG context
+        const pageContainer = document.createElement("div");
+        pageContainer.style.position = "relative";
+        pageContainer.style.width = `${width}px`;
+        pageContainer.style.height = `${height}px`;
+
+        // Important: Clone and add SVG filters FIRST
+        if (svgFilters) {
+          const filterClone = svgFilters.cloneNode(true) as HTMLElement;
+          // Make sure filter is visible during rendering
+          filterClone.style.position = "absolute";
+          filterClone.style.width = "0";
+          filterClone.style.height = "0";
+          filterClone.style.overflow = "visible"; // Change from hidden to visible
+          filterClone.removeAttribute("aria-hidden");
+          pageContainer.appendChild(filterClone);
+        }
+
+        // Clone the page and add it to our container
         const pageClone = pageRef.cloneNode(true) as HTMLElement;
         pageClone.style.transform = "scale(1)";
         pageClone.style.display = "block";
+        pageClone.style.width = "100%";
+        pageClone.style.height = "100%";
+        pageContainer.appendChild(pageClone);
 
-        tempPages.appendChild(pageClone);
+        // Add the complete container to our temp pages
+        tempPages.appendChild(pageContainer);
+
+        // Wait a moment to ensure rendering is complete
+        await new Promise((resolve) => setTimeout(resolve, 100));
 
         try {
-          // Generate JPEG first
-          const jpegUrl = await domToJpeg(pageClone, {
-            quality: 0.8,
+          // Generate JPEG
+          const jpegUrl = await domToJpeg(pageContainer, {
+            quality: 0.9,
             width,
             height,
             backgroundColor: "#ffffff",
@@ -205,7 +236,7 @@ export async function generatePreview(
           console.error(`Error generating preview for page ${i + 1}:`, error);
         }
 
-        tempPages.removeChild(pageClone);
+        tempPages.removeChild(pageContainer);
       }
     }
   } finally {
