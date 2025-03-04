@@ -23,6 +23,7 @@ export default function ExplorePage() {
         const { data, error } = await supabase
           .from("zines")
           .select(`*`)
+          .eq("privacy", "public")
           .order("created_at", { ascending: true });
         if (error) throw error;
 

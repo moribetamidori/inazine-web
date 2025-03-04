@@ -116,7 +116,7 @@ export function VerticalToolbar({
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex w-full gap-2 m-2">
+      <div className="flex w-full gap-2 m-1">
         <button
           onClick={addText}
           className="p-1 w-10 h-10 bg-black text-white rounded hover:bg-gray-800 items-center flex justify-center"
