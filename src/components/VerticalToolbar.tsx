@@ -2,6 +2,8 @@ import DocumentTextIcon from "@heroicons/react/24/outline/DocumentTextIcon";
 import PhotoIcon from "@heroicons/react/24/outline/PhotoIcon";
 import EyeIcon from "@heroicons/react/24/outline/EyeIcon";
 import PuzzlePieceIcon from "@heroicons/react/24/outline/PuzzlePieceIcon";
+import LockClosedIcon from "@heroicons/react/24/outline/LockClosedIcon";
+import LockOpenIcon from "@heroicons/react/24/outline/LockOpenIcon";
 import { useState } from "react";
 
 interface VerticalToolbarProps {
@@ -15,6 +17,9 @@ interface VerticalToolbarProps {
   scale: number;
   setScale: (scale: number) => void;
   addSticker: (stickerUrl: string) => void;
+  privacy: string;
+  togglePrivacy: () => void;
+  isLoadingPrivacy?: boolean;
 }
 
 interface StickerCollection {
@@ -47,7 +52,7 @@ const STICKER_COLLECTIONS: StickerCollection[] = [
       // Add more magic stickers
     ],
   },
-    {
+  {
     title: "Travel Stickers",
     items: [
       { url: "/stickers/travel/airplane.png", alt: "Airplane" },
@@ -98,11 +103,16 @@ export function VerticalToolbar({
   scale,
   setScale,
   addSticker,
+  privacy,
+  togglePrivacy,
+  isLoadingPrivacy = false,
 }: VerticalToolbarProps) {
   const [isAddingSticker, setIsAddingSticker] = useState(false);
   const [expandedCollection, setExpandedCollection] = useState<string | null>(
     null
   );
+
+  const isPublic = privacy === "public";
 
   return (
     <div className="flex flex-col gap-2">
@@ -138,6 +148,24 @@ export function VerticalToolbar({
             <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
           ) : (
             <EyeIcon className="size-6" />
+          )}
+        </button>
+        <button
+          onClick={togglePrivacy}
+          disabled={isLoadingPrivacy}
+          title={isPublic ? "Make private" : "Make public"}
+          className={`p-1 w-10 h-10 rounded items-center flex justify-center ${
+            isLoadingPrivacy
+              ? "bg-gray-300 cursor-not-allowed"
+              : "bg-black text-white hover:bg-gray-800"
+          }`}
+        >
+          {isLoadingPrivacy ? (
+            <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
+          ) : isPublic ? (
+            <LockOpenIcon className="size-6" />
+          ) : (
+            <LockClosedIcon className="size-6" />
           )}
         </button>
       </div>

@@ -11,7 +11,7 @@ export default function HomePage() {
           Discover how other people use Inazine, check and follow these
           community selected examples.
         </p>
-
+{/* 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <FeedCard
             title="Featured Channels"
@@ -37,26 +37,26 @@ export default function HomePage() {
             blocks="114 blocks"
             time="2 days ago"
           />
-        </div>
+        </div> */}
       </div>
     </AuthenticatedLayout>
   );
 }
 
-interface FeedCardProps {
-  title: string;
-  author: string;
-  blocks: string;
-  time: string;
-}
+// interface FeedCardProps {
+//   title: string;
+//   author: string;
+//   blocks: string;
+//   time: string;
+// }
 
-function FeedCard({ title, author, blocks, time }: FeedCardProps) {
-  return (
-    <div className="border rounded-lg p-4 hover:border-gray-400 transition-colors">
-      <h3 className="text-lg font-medium mb-2">{title}</h3>
-      <p className="text-sm text-gray-600">{author}</p>
-      <p className="text-sm text-gray-500">{blocks}</p>
-      <p className="text-sm text-gray-500">{time}</p>
-    </div>
-  );
-}
+// function FeedCard({ title, author, blocks, time }: FeedCardProps) {
+//   return (
+//     <div className="border rounded-lg p-4 hover:border-gray-400 transition-colors">
+//       <h3 className="text-lg font-medium mb-2">{title}</h3>
+//       <p className="text-sm text-gray-600">{author}</p>
+//       <p className="text-sm text-gray-500">{blocks}</p>
+//       <p className="text-sm text-gray-500">{time}</p>
+//     </div>
+//   );
+// }

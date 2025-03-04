@@ -15,7 +15,7 @@ import {
 } from "@/lib/element";
 import { useZinePages } from "@/hooks/useZinePages";
 import { DraggableElement } from "./DraggableElement";
-import { generatePreview as generateZinePreview } from "@/lib/zine";
+import { generatePreview as generateZinePreview, updateZine } from "@/lib/zine";
 import { Element } from "@/types/zine";
 import { createElement } from "@/lib/element";
 import { VerticalToolbar } from "./VerticalToolbar";
@@ -43,7 +43,24 @@ export default function ZineCanvas({
   const [currentFilter, setCurrentFilter] = useState<string>("none");
   const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
+  const [privacy, setPrivacy] = useState(zine?.privacy || "closed");
+  const [isLoadingPrivacy, setIsLoadingPrivacy] = useState(false);
 
+  // Add this function to toggle privacy
+  const togglePrivacy = async () => {
+    if (!zine?.id) return;
+
+    setIsLoadingPrivacy(true);
+    try {
+      const newPrivacy = privacy === "public" ? "closed" : "public";
+      await updateZine(zine.id, { privacy: newPrivacy });
+      setPrivacy(newPrivacy);
+    } catch (error) {
+      console.error("Error updating zine privacy:", error);
+    } finally {
+      setIsLoadingPrivacy(false);
+    }
+  };
   const handleWheel = (e: WheelEvent) => {
     if (e.ctrlKey || e.metaKey) {
       e.preventDefault();
@@ -474,6 +491,9 @@ export default function ZineCanvas({
               scale={scale}
               setScale={setScale}
               addSticker={addSticker}
+              privacy={privacy}
+              togglePrivacy={togglePrivacy}
+              isLoadingPrivacy={isLoadingPrivacy}
             />
           </div>
         </div>
