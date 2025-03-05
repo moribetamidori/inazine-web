@@ -379,9 +379,11 @@ export function DraggableElement({
                       position: "absolute",
                       top: -cropValues.top,
                       left: -cropValues.left,
-                      bottom: -cropValues.bottom,
-                      right: -cropValues.right,
-                      maxWidth: "none", // Allow image to exceed container
+                      width: element.width || imageDimensions.width,
+                      height: element.height || imageDimensions.height,
+                      maxWidth: "none",
+                      objectFit: "cover",
+                      objectPosition: "center",
                     }}
                   />
 
