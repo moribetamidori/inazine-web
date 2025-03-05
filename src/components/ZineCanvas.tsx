@@ -378,7 +378,7 @@ export default function ZineCanvas({
   };
 
   const handleAutoLayoutImages = async (files: File[]) => {
-    const testCount = null;
+    const testCount = 3;
     if (!zine?.id || files.length === 0) return;
 
     setIsProcessingAutoLayout(true);

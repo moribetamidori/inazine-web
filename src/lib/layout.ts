@@ -19,7 +19,7 @@ export const createLayoutForImages = async (
   const elements: Element[] = [];
   const padding = 40;
   const zIndexStart = 1;
-  const forceLayout = false;
+  const forceLayout = true;
 
   // For multiple images, use a consistent aspect ratio for all containers
   const containerAspectRatio = 3 / 4; // Standard portrait aspect ratio
@@ -31,11 +31,16 @@ export const createLayoutForImages = async (
     | "singleSquare"
     | "sideBySide"
     | "grid"
-    | "verticalStack";
+    | "verticalStack"
+    | "mixedGrid"
+    | "leftTwoGrid"
+    | "rightTwoGrid"
+    | "leftChessboard"
+    | "rightChessboard";
 
   // If forceLayout is provided, use it instead of random selection
   if (forceLayout) {
-    layoutType = "grid";
+    layoutType = "leftChessboard";
   } else if (imageUrls.length === 1) {
     // With only one image, randomly choose between single, singleFull, and singleSquare
     const randomValue = Math.random();
@@ -53,13 +58,29 @@ export const createLayoutForImages = async (
     // For multiple images, randomly choose a layout
     const randomValue = Math.random();
 
-    if (imageUrls.length === 2) {
-      if (randomValue < 0.6) {
-        // 60% chance to use side by side for 2 images (increased from 40%)
+    if (imageUrls.length === 7) {
+      // Use mixedGrid layout for exactly 7 images
+      layoutType = "mixedGrid";
+    } else if (imageUrls.length === 2) {
+      if (randomValue < 0.3) {
+        // 30% chance to use magazine layout for 2 images
+        layoutType = "leftTwoGrid";
+      } else if (randomValue < 0.6) {
+        // 30% chance to use right-aligned layout for 2 images
+        layoutType = "rightTwoGrid";
+      } else if (randomValue < 0.8) {
+        // 20% chance to use side by side for 2 images
         layoutType = "sideBySide";
       } else {
-        // 40% chance to use vertical stack for 2 images (increased from 30%)
+        // 20% chance to use vertical stack for 2 images
         layoutType = "verticalStack";
+      }
+    } else if (imageUrls.length === 3) {
+      // Add a condition for 3 images to use the chessboard layouts
+      if (randomValue < 0.5) {
+        layoutType = "leftChessboard";
+      } else {
+        layoutType = "rightChessboard";
       }
     } else if (imageUrls.length <= 4) {
       // For 2-4 images, choose between vertical stack and grid
@@ -325,6 +346,404 @@ export const createLayoutForImages = async (
           position_y: y,
           width: containerWidth,
           height: containerHeight,
+          scale: 1,
+          z_index: zIndexStart + i,
+          filter: "none",
+          crop: null,
+        });
+
+        elements.push({
+          ...element,
+          type: element.type as "text" | "image",
+          filter: element.filter as string,
+          crop: element.crop as {
+            top: number;
+            right: number;
+            bottom: number;
+            left: number;
+          } | null,
+        });
+      }
+      break;
+    }
+
+    case "leftTwoGrid": {
+      // Magazine-style layout with two images on the left (top and bottom)
+      // and space on the right for text
+
+      // Images take up 70% of the canvas width (increased from 60%), leaving 30% for text
+      const imageWidth = canvasWidth * 0.7 - padding * 2;
+
+      // Calculate heights to ensure consistent padding
+      const availableHeight = canvasHeight - padding * 3; // Top, middle, and bottom padding
+      const imageHeight = availableHeight / 2;
+
+      // Position for the top image
+      const topImageX = padding;
+      const topImageY = padding;
+
+      // Position for the bottom image - use the same padding as the edges
+      const bottomImageX = padding;
+      const bottomImageY = topImageY + imageHeight + padding; // Just add one padding between images
+
+      // Create top image
+      const topElement = await createElement({
+        page_id: pageId,
+        type: "image",
+        content: imageUrls[0],
+        position_x: topImageX,
+        position_y: topImageY,
+        width: imageWidth,
+        height: imageHeight,
+        scale: 1,
+        z_index: zIndexStart,
+        filter: "none",
+        crop: null,
+      });
+
+      elements.push({
+        ...topElement,
+        type: topElement.type as "text" | "image",
+        filter: topElement.filter as string,
+        crop: topElement.crop as {
+          top: number;
+          right: number;
+          bottom: number;
+          left: number;
+        } | null,
+      });
+
+      // Create bottom image
+      const bottomElement = await createElement({
+        page_id: pageId,
+        type: "image",
+        content: imageUrls[1],
+        position_x: bottomImageX,
+        position_y: bottomImageY,
+        width: imageWidth,
+        height: imageHeight,
+        scale: 1,
+        z_index: zIndexStart + 1,
+        filter: "none",
+        crop: null,
+      });
+
+      elements.push({
+        ...bottomElement,
+        type: bottomElement.type as "text" | "image",
+        filter: bottomElement.filter as string,
+        crop: bottomElement.crop as {
+          top: number;
+          right: number;
+          bottom: number;
+          left: number;
+        } | null,
+      });
+
+      break;
+    }
+
+    case "rightTwoGrid": {
+      // Magazine-style layout with two images on the right (top and bottom)
+      // and space on the left for text
+
+      // Images take up 70% of the canvas width, leaving 30% for text
+      const imageWidth = canvasWidth * 0.7 - padding * 2;
+
+      // Calculate heights to ensure consistent padding
+      const availableHeight = canvasHeight - padding * 3; // Top, middle, and bottom padding
+      const imageHeight = availableHeight / 2;
+
+      // Position for the top image - aligned to the right
+      const topImageX = canvasWidth - imageWidth - padding;
+      const topImageY = padding;
+
+      // Position for the bottom image - aligned to the right
+      const bottomImageX = canvasWidth - imageWidth - padding;
+      const bottomImageY = topImageY + imageHeight + padding; // Just add one padding between images
+
+      // Create top image
+      const topElement = await createElement({
+        page_id: pageId,
+        type: "image",
+        content: imageUrls[0],
+        position_x: topImageX,
+        position_y: topImageY,
+        width: imageWidth,
+        height: imageHeight,
+        scale: 1,
+        z_index: zIndexStart,
+        filter: "none",
+        crop: null,
+      });
+
+      elements.push({
+        ...topElement,
+        type: topElement.type as "text" | "image",
+        filter: topElement.filter as string,
+        crop: topElement.crop as {
+          top: number;
+          right: number;
+          bottom: number;
+          left: number;
+        } | null,
+      });
+
+      // Create bottom image
+      const bottomElement = await createElement({
+        page_id: pageId,
+        type: "image",
+        content: imageUrls[1],
+        position_x: bottomImageX,
+        position_y: bottomImageY,
+        width: imageWidth,
+        height: imageHeight,
+        scale: 1,
+        z_index: zIndexStart + 1,
+        filter: "none",
+        crop: null,
+      });
+
+      elements.push({
+        ...bottomElement,
+        type: bottomElement.type as "text" | "image",
+        filter: bottomElement.filter as string,
+        crop: bottomElement.crop as {
+          top: number;
+          right: number;
+          bottom: number;
+          left: number;
+        } | null,
+      });
+
+      break;
+    }
+
+    case "mixedGrid": {
+      // Mixed grid layout with 3 images on top, 1 large image in middle, and 3 images on bottom
+      // This layout requires exactly 7 images
+      if (imageUrls.length !== 7) {
+        // Fallback to grid layout if we don't have exactly 7 images
+        layoutType = "grid";
+        // Re-run the switch with grid layout
+        return createLayoutForImages(
+          imageUrls,
+          pageId,
+          canvasWidth,
+          canvasHeight
+        );
+      }
+
+      const smallImageWidth = (canvasWidth - 4 * padding) / 3; // Width for the small images (3 per row)
+      const smallImageHeight = smallImageWidth; // Square small images
+
+      const largeImageWidth = canvasWidth - 2 * padding; // Width for the large center image
+      const largeImageHeight =
+        canvasHeight - 2 * smallImageHeight - 4 * padding; // Height for large center image
+
+      // Top row - 3 small images
+      for (let i = 0; i < 3; i++) {
+        const x = padding + i * (smallImageWidth + padding);
+        const y = padding;
+
+        const element = await createElement({
+          page_id: pageId,
+          type: "image",
+          content: imageUrls[i],
+          position_x: x,
+          position_y: y,
+          width: smallImageWidth,
+          height: smallImageHeight,
+          scale: 1,
+          z_index: zIndexStart + i,
+          filter: "none",
+          crop: null,
+        });
+
+        elements.push({
+          ...element,
+          type: element.type as "text" | "image",
+          filter: element.filter as string,
+          crop: element.crop as {
+            top: number;
+            right: number;
+            bottom: number;
+            left: number;
+          } | null,
+        });
+      }
+
+      // Middle - 1 large image
+      const largeImageX = padding;
+      const largeImageY = padding + smallImageHeight + padding;
+
+      const largeElement = await createElement({
+        page_id: pageId,
+        type: "image",
+        content: imageUrls[3],
+        position_x: largeImageX,
+        position_y: largeImageY,
+        width: largeImageWidth,
+        height: largeImageHeight,
+        scale: 1,
+        z_index: zIndexStart + 3,
+        filter: "none",
+        crop: null,
+      });
+
+      elements.push({
+        ...largeElement,
+        type: largeElement.type as "text" | "image",
+        filter: largeElement.filter as string,
+        crop: largeElement.crop as {
+          top: number;
+          right: number;
+          bottom: number;
+          left: number;
+        } | null,
+      });
+
+      // Bottom row - 3 small images
+      for (let i = 0; i < 3; i++) {
+        const x = padding + i * (smallImageWidth + padding);
+        const y =
+          padding + smallImageHeight + padding + largeImageHeight + padding;
+
+        const element = await createElement({
+          page_id: pageId,
+          type: "image",
+          content: imageUrls[i + 4], // Images 4, 5, 6
+          position_x: x,
+          position_y: y,
+          width: smallImageWidth,
+          height: smallImageHeight,
+          scale: 1,
+          z_index: zIndexStart + i + 4,
+          filter: "none",
+          crop: null,
+        });
+
+        elements.push({
+          ...element,
+          type: element.type as "text" | "image",
+          filter: element.filter as string,
+          crop: element.crop as {
+            top: number;
+            right: number;
+            bottom: number;
+            left: number;
+          } | null,
+        });
+      }
+      break;
+    }
+
+    case "leftChessboard": {
+      // Chessboard layout with 3 images in a diagonal pattern from top-left
+      // This layout works best with exactly 3 images
+      if (imageUrls.length !== 3) {
+        // Fallback to grid layout if we don't have exactly 3 images
+        return createLayoutForImages(
+          imageUrls,
+          pageId,
+          canvasWidth,
+          canvasHeight
+        );
+      }
+
+      // Calculate dimensions for the images - increased size
+      const imageWidth = Math.min(canvasWidth, canvasHeight) * 0.42; // Larger size (up from 0.35)
+      const imageHeight = imageWidth; // Square images
+
+      // Calculate total diagonal width and height
+      const totalWidth = imageWidth * 2; // First and second images side by side
+      const totalHeight = imageHeight * 3; // Three images stacked diagonally
+
+      // Center the entire pattern with smaller margins
+      const startX = (canvasWidth - totalWidth) / 2;
+      const startY = (canvasHeight - totalHeight) / 2;
+
+      // Calculate positions for perfect corner touching
+      const positions = [
+        { x: startX, y: startY }, // Top-left image
+        {
+          x: startX + imageWidth, // Right edge aligned with first image
+          y: startY + imageHeight, // Top edge aligned with bottom of first image
+        }, // Middle-right image
+        {
+          x: startX, // Left-aligned with first image
+          y: startY + imageHeight * 2, // Top edge aligned with bottom of second image
+        }, // Bottom-left image
+      ];
+
+      // Create the three images
+      for (let i = 0; i < 3; i++) {
+        const element = await createElement({
+          page_id: pageId,
+          type: "image",
+          content: imageUrls[i],
+          position_x: positions[i].x,
+          position_y: positions[i].y,
+          width: imageWidth,
+          height: imageHeight,
+          scale: 1,
+          z_index: zIndexStart + i,
+          filter: "none",
+          crop: null,
+        });
+
+        elements.push({
+          ...element,
+          type: element.type as "text" | "image",
+          filter: element.filter as string,
+          crop: element.crop as {
+            top: number;
+            right: number;
+            bottom: number;
+            left: number;
+          } | null,
+        });
+      }
+      break;
+    }
+
+    case "rightChessboard": {
+      // Chessboard layout with 3 images in a diagonal pattern from top-right
+      // This layout works best with exactly 3 images
+      if (imageUrls.length !== 3) {
+        // Fallback to grid layout if we don't have exactly 3 images
+        return createLayoutForImages(
+          imageUrls,
+          pageId,
+          canvasWidth,
+          canvasHeight
+        );
+      }
+
+      // Calculate square size - each square takes up about 1/3 of the canvas
+      const squareSize = Math.min(canvasWidth, canvasHeight) * 0.4;
+      const padding = 20;
+
+      // Positions for the three squares in a right-aligned chessboard pattern
+      const positions = [
+        { x: canvasWidth - squareSize - padding, y: padding }, // Top-right
+        { x: padding, y: (canvasHeight - squareSize) / 2 }, // Middle-left
+        {
+          x: canvasWidth - squareSize - padding,
+          y: canvasHeight - squareSize - padding,
+        }, // Bottom-right
+      ];
+
+      // Create the three images
+      for (let i = 0; i < 3; i++) {
+        const element = await createElement({
+          page_id: pageId,
+          type: "image",
+          content: imageUrls[i],
+          position_x: positions[i].x,
+          position_y: positions[i].y,
+          width: squareSize,
+          height: squareSize,
           scale: 1,
           z_index: zIndexStart + i,
           filter: "none",
