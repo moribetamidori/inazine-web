@@ -19,7 +19,7 @@ export const createLayoutForImages = async (
   const elements: Element[] = [];
   const padding = 40;
   const zIndexStart = 1;
-  const forceLayout = true;
+  const forceLayout = false;     
 
   // For multiple images, use a consistent aspect ratio for all containers
   const containerAspectRatio = 3 / 4; // Standard portrait aspect ratio

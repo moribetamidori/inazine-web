@@ -58,27 +58,27 @@ function SortablePage({
     transition: transition || undefined,
   };
 
+  // Separate click handler from drag functionality
+  const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onClick();
+  };
+
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      {...attributes}
-      {...listeners}
-      className="w-full"
-    >
+    <div ref={setNodeRef} style={style} {...attributes} className="w-full">
       <button
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          onClick();
-        }}
+        onClick={handleClick}
         className={`w-full aspect-[3/4] rounded-lg transition-all ${
           isCurrentPage
             ? "ring-2 ring-black ring-offset-2"
             : "hover:bg-gray-200"
         }`}
       >
-        <div className="w-full h-full bg-white border border-gray-300 rounded-lg flex items-center justify-center">
+        <div
+          {...listeners}
+          className="w-full h-full bg-white border border-gray-300 rounded-lg flex items-center justify-center"
+        >
           Page {index + 1}
         </div>
       </button>
@@ -97,8 +97,8 @@ export default function Thumbnail({
     useSensor(PointerSensor, {
       activationConstraint: {
         distance: 8,
-        delay: 100,
-        tolerance: 20,
+        delay: 250, // Increased to provide more time for clicking
+        tolerance: 5, // Reduced for better precision
       },
     }),
     useSensor(KeyboardSensor, {
