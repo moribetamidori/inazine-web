@@ -16,7 +16,8 @@ import {
 import { useSortable } from "@dnd-kit/sortable";
 import { createClient } from "@/lib/supabase/client";
 import { Page } from "@/types/zine";
-import React from "react";
+import React, { useEffect } from "react";
+import { deletePage } from "@/lib/page";
 
 interface ThumbnailProps {
   pages: Page[];
@@ -92,7 +93,6 @@ export default function Thumbnail({
   addNewPage,
   setPages,
 }: ThumbnailProps) {
-
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -133,6 +133,66 @@ export default function Thumbnail({
       )
     );
   };
+
+  // Handle page deletion
+  const handleDeletePage = async () => {
+    if (pages.length <= 1) {
+      // Don't allow deleting the last page
+      return;
+    }
+
+    try {
+      const pageToDelete = pages[currentPage];
+
+      // Delete the page from the database
+      await deletePage(pageToDelete.id);
+
+      // Update local state
+      const newPages = [...pages];
+      newPages.splice(currentPage, 1);
+
+      // Update page orders in database
+      const supabase = createClient();
+      await Promise.all(
+        newPages.map((page, index) =>
+          supabase.from("pages").update({ page_order: index }).eq("id", page.id)
+        )
+      );
+
+      // Update local state with new pages
+      setPages(newPages);
+
+      // Update current page index
+      if (currentPage >= newPages.length) {
+        setCurrentPage(newPages.length - 1);
+      }
+    } catch (error) {
+      console.error("Error deleting page:", error);
+    }
+  };
+
+  // Add keyboard event listener for delete key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Check if an input field is focused
+      const isInputFocused =
+        document.activeElement?.tagName === "INPUT" ||
+        document.activeElement?.tagName === "TEXTAREA";
+
+      // Only handle delete if no input is focused and we have a current page
+      if (
+        !isInputFocused &&
+        (e.key === "Delete" || e.key === "Backspace") &&
+        pages.length > 0
+      ) {
+        e.preventDefault();
+        handleDeletePage();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [currentPage, pages]);
 
   return (
     <div className="w-24 bg-gray-100 overflow-y-auto border-r border-gray-200 flex flex-col gap-2 p-2">
