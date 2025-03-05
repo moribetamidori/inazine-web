@@ -49,17 +49,17 @@ export const createLayoutForImages = async (
   } else if (imageUrls.length === 1) {
     // With only one image, randomly choose between layouts
     const randomValue = Math.random();
-    if (randomValue < 0.2) {
-      // 20% chance for singleFull (full canvas)
+    if (randomValue < 0.3) {
+      // 30% chance for singleFull (full canvas)
       layoutType = "singleFull";
-    } else if (randomValue < 0.4) {
+    } else if (randomValue < 0.5) {
       // 20% chance for single (centered with padding)
       layoutType = "single";
-    } else if (randomValue < 0.6) {
+    } else if (randomValue < 0.7) {
       // 20% chance for singleSquare (square in center)
       layoutType = "singleSquare";
     } else if (randomValue < 0.8) {
-      // 20% chance for horizontalBand
+      // 10% chance for horizontalBand
       layoutType = "horizontalBand";
     } else if (randomValue < 0.9) {
       // 10% chance for topHalf
@@ -76,23 +76,23 @@ export const createLayoutForImages = async (
       // Use mixedGrid layout for exactly 7 images
       layoutType = "mixedGrid";
     } else if (imageUrls.length === 2) {
-      if (randomValue < 0.3) {
-        // 20% chance to use overlay layout for 2 images
+      if (randomValue < 0.4) {
+        // 40% chance to use overlay layout for 2 images
         layoutType = "overlayCenter";
-      } else if (randomValue < 0.35) {
-        // 15% chance to use magazine layout for 2 images
+      } else if (randomValue < 0.45) {
+        // 5% chance to use magazine layout for 2 images
         layoutType = "leftTwoGrid";
-      } else if (randomValue < 0.4) {
-        // 10% chance to use right-aligned layout for 2 images
+      } else if (randomValue < 0.5) {
+        // 5% chance to use right-aligned layout for 2 images
         layoutType = "rightTwoGrid";
-      } else if (randomValue < 0.6) {
-        // 20% chance to use side by side for 2 images
+      } else if (randomValue < 0.55) {
+        // 5% chance to use side by side for 2 images
         layoutType = "sideBySide";
-      } else if (randomValue < 0.8) {
-        // 20% chance to use vertical stack for 2 images
+      } else if (randomValue < 0.65) {
+        // 10% chance to use vertical stack for 2 images
         layoutType = "verticalStack";
       } else {
-        // 20% chance to use horizontalSplit for 2 images
+        // 35% chance to use horizontalSplit for 2 images
         layoutType = "horizontalSplit";
       }
     } else if (imageUrls.length === 3) {
@@ -105,22 +105,16 @@ export const createLayoutForImages = async (
         // 20% chance for vertical stack for 3 images
         layoutType = "verticalStack";
       }
-    } else if (imageUrls.length <= 4) {
-      // For 2-4 images, choose between vertical stack and grid
-      if (imageUrls.length === 3 || randomValue < 0.6) {
-        // Use vertical stack for 3 images, or 60% chance for 2 or 4 images
-        layoutType = "verticalStack";
-      } else {
-        // 40% chance to use grid layout for 2 or 4 images
-        layoutType = "grid";
-      }
+    } else if (imageUrls.length === 4) {
+      // For 4 images, always use grid layout
+      layoutType = "grid";
     } else {
       // For more than 4 images, use grid for specific counts that work well in grids
       if (imageUrls.length === 6 || imageUrls.length === 9) {
         // 2x3 grid for 6 images, 3x3 grid for 9 images
         layoutType = "grid";
       } else {
-        // Change from verticalStack to grid for more than 4 images
+        // Always use grid for more than 4 images
         layoutType = "grid";
       }
     }

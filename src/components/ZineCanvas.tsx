@@ -496,21 +496,21 @@ export default function ZineCanvas({
           let imagesPerPage;
           const rand = Math.random();
 
-          if (rand < 0.40) {
-            // 35% chance for 1-2 images
-            imagesPerPage = Math.random() < 0.3 ? 1 : 2;
-          } else if (rand < 0.7) {
-            // 35% chance for 3-4 images
-            imagesPerPage = Math.random() < 0.3 ? 3 : 4;
+          if (rand < 0.80) {
+            // 50% chance for 1-2 images
+            imagesPerPage = Math.random() < 0.35 ? 1 : 2;
           } else if (rand < 0.85) {
+            // 20% chance for 3-4 images
+            imagesPerPage = Math.random() < 0.3 ? 3 : 4;
+          } else if (rand < 0.90) {
             // 15% chance for 5-6 images
-            imagesPerPage = Math.random() < 0.5 ? 5 : 6;
+            imagesPerPage = Math.random() < 0.2 ? 5 : 6;
           } else if (rand < 0.95) {
             // 10% chance for exactly 7 images (the bump)
             imagesPerPage = 7;
           } else {
             // 5% chance for 8-9 images
-            imagesPerPage = Math.random() < 0.5 ? 8 : 9;
+            imagesPerPage = Math.random() < 0.2 ? 8 : 9;
           }
 
           // Ensure we don't try to use more images than we have
