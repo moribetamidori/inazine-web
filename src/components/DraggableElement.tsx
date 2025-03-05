@@ -353,7 +353,7 @@ export function DraggableElement({
                 <div
                   className={`relative ${
                     element.filter ? `filter-${element.filter}` : ""
-                  } border-2 border-red-500`}
+                  } `}
                   onClick={handleDoubleClick}
                   style={{
                     width:
@@ -406,10 +406,10 @@ export function DraggableElement({
                   )}
 
                   {/* Optional: Add container dimensions display */}
-                  <div className="absolute bottom-0 right-0 bg-red-500 text-white text-xs px-1">
+                  {/* <div className="absolute bottom-0 right-0 bg-red-500 text-white text-xs px-1">
                     {Math.round(element.width || 0)}x
                     {Math.round(element.height || 0)}
-                  </div>
+                  </div> */}
                 </div>
                 {element.type === "image" && isSelected && (
                   <>
