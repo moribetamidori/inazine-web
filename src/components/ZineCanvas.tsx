@@ -378,7 +378,7 @@ export default function ZineCanvas({
   };
 
   const handleAutoLayoutImages = async (files: File[]) => {
-    const testCount = 3;
+    const testCount = null;
     if (!zine?.id || files.length === 0) return;
 
     setIsProcessingAutoLayout(true);
@@ -492,12 +492,29 @@ export default function ZineCanvas({
       } else {
         // Original logic for distributing across multiple pages
         while (shuffledImages.length > 0) {
-          // Determine how many images to place on this page based on total image count
-          const maxImagesPerPage = shuffledImages.length > 12 ? 9 : 6;
-          const imagesPerPage = Math.min(
-            Math.floor(Math.random() * maxImagesPerPage) + 1,
-            shuffledImages.length
-          );
+          // Biased random distribution favoring 1-2 images, then 3-4, with fewer 5+ (but a bump at 7)
+          let imagesPerPage;
+          const rand = Math.random();
+
+          if (rand < 0.40) {
+            // 35% chance for 1-2 images
+            imagesPerPage = Math.random() < 0.3 ? 1 : 2;
+          } else if (rand < 0.7) {
+            // 35% chance for 3-4 images
+            imagesPerPage = Math.random() < 0.3 ? 3 : 4;
+          } else if (rand < 0.85) {
+            // 15% chance for 5-6 images
+            imagesPerPage = Math.random() < 0.5 ? 5 : 6;
+          } else if (rand < 0.95) {
+            // 10% chance for exactly 7 images (the bump)
+            imagesPerPage = 7;
+          } else {
+            // 5% chance for 8-9 images
+            imagesPerPage = Math.random() < 0.5 ? 8 : 9;
+          }
+
+          // Ensure we don't try to use more images than we have
+          imagesPerPage = Math.min(imagesPerPage, shuffledImages.length);
 
           // Get the current page or create a new one if needed
           let currentPage = updatedPages[currentPageIndex];

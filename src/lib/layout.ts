@@ -19,7 +19,7 @@ export const createLayoutForImages = async (
   const elements: Element[] = [];
   const padding = 40;
   const zIndexStart = 1;
-  const forceLayout = true;
+  const forceLayout = false;
 
   // For multiple images, use a consistent aspect ratio for all containers
   const containerAspectRatio = 3 / 4; // Standard portrait aspect ratio
@@ -36,23 +36,37 @@ export const createLayoutForImages = async (
     | "leftTwoGrid"
     | "rightTwoGrid"
     | "leftChessboard"
-    | "rightChessboard";
+    | "rightChessboard"
+    | "horizontalBand"
+    | "horizontalSplit"
+    | "overlayCenter"
+    | "topHalf" // New layout
+    | "bottomHalf"; // New layout
 
   // If forceLayout is provided, use it instead of random selection
   if (forceLayout) {
-    layoutType = "leftChessboard";
+    layoutType = "topHalf"; // Changed to test the new layout
   } else if (imageUrls.length === 1) {
-    // With only one image, randomly choose between single, singleFull, and singleSquare
+    // With only one image, randomly choose between layouts
     const randomValue = Math.random();
-    if (randomValue < 0.33) {
-      // 33% chance for singleFull (full canvas)
+    if (randomValue < 0.2) {
+      // 20% chance for singleFull (full canvas)
       layoutType = "singleFull";
-    } else if (randomValue < 0.67) {
-      // 33% chance for single (centered with padding)
+    } else if (randomValue < 0.4) {
+      // 20% chance for single (centered with padding)
       layoutType = "single";
-    } else {
-      // 33% chance for singleSquare (square in center)
+    } else if (randomValue < 0.6) {
+      // 20% chance for singleSquare (square in center)
       layoutType = "singleSquare";
+    } else if (randomValue < 0.8) {
+      // 20% chance for horizontalBand
+      layoutType = "horizontalBand";
+    } else if (randomValue < 0.9) {
+      // 10% chance for topHalf
+      layoutType = "topHalf";
+    } else {
+      // 10% chance for bottomHalf
+      layoutType = "bottomHalf";
     }
   } else {
     // For multiple images, randomly choose a layout
@@ -63,24 +77,33 @@ export const createLayoutForImages = async (
       layoutType = "mixedGrid";
     } else if (imageUrls.length === 2) {
       if (randomValue < 0.3) {
-        // 30% chance to use magazine layout for 2 images
+        // 20% chance to use overlay layout for 2 images
+        layoutType = "overlayCenter";
+      } else if (randomValue < 0.35) {
+        // 15% chance to use magazine layout for 2 images
         layoutType = "leftTwoGrid";
-      } else if (randomValue < 0.6) {
-        // 30% chance to use right-aligned layout for 2 images
+      } else if (randomValue < 0.4) {
+        // 10% chance to use right-aligned layout for 2 images
         layoutType = "rightTwoGrid";
-      } else if (randomValue < 0.8) {
+      } else if (randomValue < 0.6) {
         // 20% chance to use side by side for 2 images
         layoutType = "sideBySide";
-      } else {
+      } else if (randomValue < 0.8) {
         // 20% chance to use vertical stack for 2 images
         layoutType = "verticalStack";
+      } else {
+        // 20% chance to use horizontalSplit for 2 images
+        layoutType = "horizontalSplit";
       }
     } else if (imageUrls.length === 3) {
       // Add a condition for 3 images to use the chessboard layouts
-      if (randomValue < 0.5) {
+      if (randomValue < 0.4) {
         layoutType = "leftChessboard";
-      } else {
+      } else if (randomValue < 0.8) {
         layoutType = "rightChessboard";
+      } else {
+        // 20% chance for vertical stack for 3 images
+        layoutType = "verticalStack";
       }
     } else if (imageUrls.length <= 4) {
       // For 2-4 images, choose between vertical stack and grid
@@ -97,7 +120,8 @@ export const createLayoutForImages = async (
         // 2x3 grid for 6 images, 3x3 grid for 9 images
         layoutType = "grid";
       } else {
-        layoutType = "verticalStack";
+        // Change from verticalStack to grid for more than 4 images
+        layoutType = "grid";
       }
     }
   }
@@ -651,59 +675,120 @@ export const createLayoutForImages = async (
         );
       }
 
-      // Calculate dimensions for the images - increased size
-      const imageWidth = Math.min(canvasWidth, canvasHeight) * 0.42; // Larger size (up from 0.35)
-      const imageHeight = imageWidth; // Square images
+      // Calculate dimensions for the images with safety margins
+      const baseWidth = Math.min(canvasWidth, canvasHeight) * 0.38; // Base width
+      const baseHeight = baseWidth * 1.2; // Make height 20% taller than width
 
-      // Calculate total diagonal width and height
-      const totalWidth = imageWidth * 2; // First and second images side by side
-      const totalHeight = imageHeight * 3; // Three images stacked diagonally
+      // Make images wider while keeping the increased height
+      const imageHeight = baseHeight;
+      const imageWidth = baseWidth * 1.2; // 20% wider than base width
 
-      // Center the entire pattern with smaller margins
-      const startX = (canvasWidth - totalWidth) / 2;
-      const startY = (canvasHeight - totalHeight) / 2;
+      // Extension amount
+      const extension = 25;
 
-      // Calculate positions for perfect corner touching
-      const positions = [
-        { x: startX, y: startY }, // Top-left image
-        {
-          x: startX + imageWidth, // Right edge aligned with first image
-          y: startY + imageHeight, // Top edge aligned with bottom of first image
-        }, // Middle-right image
-        {
-          x: startX, // Left-aligned with first image
-          y: startY + imageHeight * 2, // Top edge aligned with bottom of second image
-        }, // Bottom-left image
-      ];
+      // Calculate total width and height needed with extensions
+      const totalWidth = imageWidth * 2 + extension; // First image + second image + extension
+      const totalHeight = imageHeight * 3; // Three images stacked vertically
 
-      // Create the three images
-      for (let i = 0; i < 3; i++) {
-        const element = await createElement({
-          page_id: pageId,
-          type: "image",
-          content: imageUrls[i],
-          position_x: positions[i].x,
-          position_y: positions[i].y,
-          width: imageWidth,
-          height: imageHeight,
-          scale: 1,
-          z_index: zIndexStart + i,
-          filter: "none",
-          crop: null,
-        });
+      // Check if we need to scale down to fit canvas
+      const widthScale = (canvasWidth - padding * 2) / totalWidth;
+      const heightScale = (canvasHeight - padding * 2) / totalHeight;
+      const scale = Math.min(widthScale, heightScale, 1); // Don't scale up, only down if needed
 
-        elements.push({
-          ...element,
-          type: element.type as "text" | "image",
-          filter: element.filter as string,
-          crop: element.crop as {
-            top: number;
-            right: number;
-            bottom: number;
-            left: number;
-          } | null,
-        });
-      }
+      // Apply scaling if necessary
+      const finalWidth = imageWidth * scale;
+      const finalHeight = imageHeight * scale;
+      const scaledExtension = extension * scale;
+
+      // Center the pattern horizontally - adjust to make it more centered
+      // Calculate the total width including all extensions
+      const patternTotalWidth = finalWidth * 2 + scaledExtension;
+      const startX =
+        (canvasWidth - patternTotalWidth) / 2 + scaledExtension / 2; // Adjust to center properly
+      const startY = (canvasHeight - finalHeight * 3) / 2;
+
+      // Create the three images with specific extensions
+      // First image - extended to the left
+      const firstElement = await createElement({
+        page_id: pageId,
+        type: "image",
+        content: imageUrls[0],
+        position_x: startX - scaledExtension, // Extended left by scaledExtension
+        position_y: startY,
+        width: finalWidth + scaledExtension, // Wider to account for extension
+        height: finalHeight,
+        scale: 1,
+        z_index: zIndexStart,
+        filter: "none",
+        crop: null,
+      });
+
+      elements.push({
+        ...firstElement,
+        type: firstElement.type as "text" | "image",
+        filter: firstElement.filter as string,
+        crop: firstElement.crop as {
+          top: number;
+          right: number;
+          bottom: number;
+          left: number;
+        } | null,
+      });
+
+      // Second image - extended to the right
+      const secondElement = await createElement({
+        page_id: pageId,
+        type: "image",
+        content: imageUrls[1],
+        position_x: startX + finalWidth, // Normal position
+        position_y: startY + finalHeight,
+        width: finalWidth + scaledExtension, // Wider to account for extension
+        height: finalHeight,
+        scale: 1,
+        z_index: zIndexStart + 1,
+        filter: "none",
+        crop: null,
+      });
+
+      elements.push({
+        ...secondElement,
+        type: secondElement.type as "text" | "image",
+        filter: secondElement.filter as string,
+        crop: secondElement.crop as {
+          top: number;
+          right: number;
+          bottom: number;
+          left: number;
+        } | null,
+      });
+
+      // Third image - extended to the left
+      const thirdElement = await createElement({
+        page_id: pageId,
+        type: "image",
+        content: imageUrls[2],
+        position_x: startX - scaledExtension, // Extended left by scaledExtension
+        position_y: startY + finalHeight * 2,
+        width: finalWidth + scaledExtension, // Wider to account for extension
+        height: finalHeight,
+        scale: 1,
+        z_index: zIndexStart + 2,
+        filter: "none",
+        crop: null,
+      });
+
+      elements.push({
+        ...thirdElement,
+        type: thirdElement.type as "text" | "image",
+        filter: thirdElement.filter as string,
+        crop: thirdElement.crop as {
+          top: number;
+          right: number;
+          bottom: number;
+          left: number;
+        } | null,
+      });
+
       break;
     }
 
@@ -720,48 +805,359 @@ export const createLayoutForImages = async (
         );
       }
 
-      // Calculate square size - each square takes up about 1/3 of the canvas
-      const squareSize = Math.min(canvasWidth, canvasHeight) * 0.4;
-      const padding = 20;
+      // Calculate dimensions for the images with safety margins
+      const baseWidth = Math.min(canvasWidth, canvasHeight) * 0.38; // Base width
+      const baseHeight = baseWidth * 1.2; // Make height 20% taller than width
 
-      // Positions for the three squares in a right-aligned chessboard pattern
-      const positions = [
-        { x: canvasWidth - squareSize - padding, y: padding }, // Top-right
-        { x: padding, y: (canvasHeight - squareSize) / 2 }, // Middle-left
-        {
-          x: canvasWidth - squareSize - padding,
-          y: canvasHeight - squareSize - padding,
-        }, // Bottom-right
-      ];
+      // Make images wider while keeping the increased height
+      const imageHeight = baseHeight;
+      const imageWidth = baseWidth * 1.2; // 20% wider than base width
 
-      // Create the three images
-      for (let i = 0; i < 3; i++) {
-        const element = await createElement({
-          page_id: pageId,
-          type: "image",
-          content: imageUrls[i],
-          position_x: positions[i].x,
-          position_y: positions[i].y,
-          width: squareSize,
-          height: squareSize,
-          scale: 1,
-          z_index: zIndexStart + i,
-          filter: "none",
-          crop: null,
-        });
+      // Extension amount
+      const extension = 25;
 
-        elements.push({
-          ...element,
-          type: element.type as "text" | "image",
-          filter: element.filter as string,
-          crop: element.crop as {
-            top: number;
-            right: number;
-            bottom: number;
-            left: number;
-          } | null,
-        });
+      // Calculate total width and height needed with extensions
+      const totalWidth = imageWidth * 2 + extension; // First image + second image + extension
+      const totalHeight = imageHeight * 3; // Three images stacked vertically
+
+      // Check if we need to scale down to fit canvas
+      const widthScale = (canvasWidth - padding * 2) / totalWidth;
+      const heightScale = (canvasHeight - padding * 2) / totalHeight;
+      const scale = Math.min(widthScale, heightScale, 1); // Don't scale up, only down if needed
+
+      // Apply scaling if necessary
+      const finalWidth = imageWidth * scale;
+      const finalHeight = imageHeight * scale;
+      const scaledExtension = extension * scale;
+
+      // Center the pattern horizontally - mirror of leftChessboard
+      const patternTotalWidth = finalWidth * 2 + scaledExtension;
+      const startX = (canvasWidth - patternTotalWidth) / 2;
+      const startY = (canvasHeight - finalHeight * 3) / 2;
+
+      // First image - top right
+      const firstElement = await createElement({
+        page_id: pageId,
+        type: "image",
+        content: imageUrls[0],
+        position_x: startX + finalWidth, // Right side position
+        position_y: startY,
+        width: finalWidth + scaledExtension,
+        height: finalHeight,
+        scale: 1,
+        z_index: zIndexStart,
+        filter: "none",
+        crop: null,
+      });
+
+      elements.push({
+        ...firstElement,
+        type: firstElement.type as "text" | "image",
+        filter: firstElement.filter as string,
+        crop: firstElement.crop as {
+          top: number;
+          right: number;
+          bottom: number;
+          left: number;
+        } | null,
+      });
+
+      // Second image - middle left
+      const secondElement = await createElement({
+        page_id: pageId,
+        type: "image",
+        content: imageUrls[1],
+        position_x: startX - scaledExtension, // Extended left
+        position_y: startY + finalHeight,
+        width: finalWidth + scaledExtension,
+        height: finalHeight,
+        scale: 1,
+        z_index: zIndexStart + 1,
+        filter: "none",
+        crop: null,
+      });
+
+      elements.push({
+        ...secondElement,
+        type: secondElement.type as "text" | "image",
+        filter: secondElement.filter as string,
+        crop: secondElement.crop as {
+          top: number;
+          right: number;
+          bottom: number;
+          left: number;
+        } | null,
+      });
+
+      // Third image - bottom right
+      const thirdElement = await createElement({
+        page_id: pageId,
+        type: "image",
+        content: imageUrls[2],
+        position_x: startX + finalWidth, // Right side position
+        position_y: startY + finalHeight * 2,
+        width: finalWidth + scaledExtension,
+        height: finalHeight,
+        scale: 1,
+        z_index: zIndexStart + 2,
+        filter: "none",
+        crop: null,
+      });
+
+      elements.push({
+        ...thirdElement,
+        type: thirdElement.type as "text" | "image",
+        filter: thirdElement.filter as string,
+        crop: thirdElement.crop as {
+          top: number;
+          right: number;
+          bottom: number;
+          left: number;
+        } | null,
+      });
+
+      break;
+    }
+
+    case "horizontalBand": {
+      // Horizontal band layout - image spans full width with white space above and below
+      const imageHeight = canvasHeight * 0.45; // Image takes 60% of canvas height (increased from 40%)
+      const imageWidth = canvasWidth; // Image takes 100% of canvas width
+
+      // Center vertically but align to left edge horizontally
+      const x = 0; // No margin on left
+      const y = (canvasHeight - imageHeight) / 2;
+
+      const element = await createElement({
+        page_id: pageId,
+        type: "image",
+        content: imageUrls[0],
+        position_x: x,
+        position_y: y,
+        width: imageWidth,
+        height: imageHeight,
+        scale: 1,
+        z_index: zIndexStart,
+        filter: "none",
+        crop: null,
+      });
+
+      elements.push({
+        ...element,
+        type: element.type as "text" | "image",
+        filter: element.filter as string,
+        crop: element.crop as {
+          top: number;
+          right: number;
+          bottom: number;
+          left: number;
+        } | null,
+      });
+      break;
+    }
+
+    case "horizontalSplit": {
+      const imageWidth = canvasWidth; // Full width
+      const imageHeight = canvasHeight / 2; // Half height for each image
+
+      // Top image
+      const topElement = await createElement({
+        page_id: pageId,
+        type: "image",
+        content: imageUrls[0],
+        position_x: 0,
+        position_y: 0,
+        width: imageWidth,
+        height: imageHeight,
+        scale: 1,
+        z_index: zIndexStart,
+        filter: "none",
+        crop: null,
+      });
+
+      elements.push({
+        ...topElement,
+        type: topElement.type as "text" | "image",
+        filter: topElement.filter as string,
+        crop: topElement.crop as {
+          top: number;
+          right: number;
+          bottom: number;
+          left: number;
+        } | null,
+      });
+
+      // Bottom image
+      const bottomElement = await createElement({
+        page_id: pageId,
+        type: "image",
+        content: imageUrls[1],
+        position_x: 0,
+        position_y: imageHeight,
+        width: imageWidth,
+        height: imageHeight,
+        scale: 1,
+        z_index: zIndexStart + 1,
+        filter: "none",
+        crop: null,
+      });
+
+      elements.push({
+        ...bottomElement,
+        type: bottomElement.type as "text" | "image",
+        filter: bottomElement.filter as string,
+        crop: bottomElement.crop as {
+          top: number;
+          right: number;
+          bottom: number;
+          left: number;
+        } | null,
+      });
+
+      break;
+    }
+
+    case "overlayCenter": {
+      // Overlay layout with one full-canvas image and a smaller centered image on top
+      if (imageUrls.length !== 2) {
+        // Fallback to singleFull layout if we don't have exactly 2 images
+        return createLayoutForImages(
+          imageUrls,
+          pageId,
+          canvasWidth,
+          canvasHeight
+        );
       }
+
+      // First image covers the entire canvas
+      const backgroundElement = await createElement({
+        page_id: pageId,
+        type: "image",
+        content: imageUrls[0],
+        position_x: 0,
+        position_y: 0,
+        width: canvasWidth,
+        height: canvasHeight,
+        scale: 1,
+        z_index: zIndexStart,
+        filter: "none",
+        crop: null,
+      });
+
+      elements.push({
+        ...backgroundElement,
+        type: backgroundElement.type as "text" | "image",
+        filter: backgroundElement.filter as string,
+        crop: backgroundElement.crop as {
+          top: number;
+          right: number;
+          bottom: number;
+          left: number;
+        } | null,
+      });
+
+      // Second image is smaller and centered on top
+      const overlayWidth = canvasWidth * 0.8; // 80% of canvas width
+      const overlayHeight = canvasHeight * 0.8; // 80% of canvas height
+      const overlayX = (canvasWidth - overlayWidth) / 2; // Center horizontally
+      const overlayY = (canvasHeight - overlayHeight) / 2; // Center vertically
+
+      const overlayElement = await createElement({
+        page_id: pageId,
+        type: "image",
+        content: imageUrls[1],
+        position_x: overlayX,
+        position_y: overlayY,
+        width: overlayWidth,
+        height: overlayHeight,
+        scale: 1,
+        z_index: zIndexStart + 1, // Higher z-index to appear on top
+        filter: "none",
+        crop: null,
+      });
+
+      elements.push({
+        ...overlayElement,
+        type: overlayElement.type as "text" | "image",
+        filter: overlayElement.filter as string,
+        crop: overlayElement.crop as {
+          top: number;
+          right: number;
+          bottom: number;
+          left: number;
+        } | null,
+      });
+
+      break;
+    }
+
+    case "topHalf": {
+      // Image takes up the top half of the canvas, bottom half is blank
+      const imageWidth = canvasWidth;
+      const imageHeight = canvasHeight / 2;
+      const x = 0;
+      const y = 0;
+
+      const element = await createElement({
+        page_id: pageId,
+        type: "image",
+        content: imageUrls[0],
+        position_x: x,
+        position_y: y,
+        width: imageWidth,
+        height: imageHeight,
+        scale: 1,
+        z_index: zIndexStart,
+        filter: "none",
+        crop: null,
+      });
+
+      elements.push({
+        ...element,
+        type: element.type as "text" | "image",
+        filter: element.filter as string,
+        crop: element.crop as {
+          top: number;
+          right: number;
+          bottom: number;
+          left: number;
+        } | null,
+      });
+      break;
+    }
+
+    case "bottomHalf": {
+      // Image takes up the bottom half of the canvas, top half is blank
+      const imageWidth = canvasWidth;
+      const imageHeight = canvasHeight / 2;
+      const x = 0;
+      const y = canvasHeight / 2; // Position at the middle of the canvas
+
+      const element = await createElement({
+        page_id: pageId,
+        type: "image",
+        content: imageUrls[0],
+        position_x: x,
+        position_y: y,
+        width: imageWidth,
+        height: imageHeight,
+        scale: 1,
+        z_index: zIndexStart,
+        filter: "none",
+        crop: null,
+      });
+
+      elements.push({
+        ...element,
+        type: element.type as "text" | "image",
+        filter: element.filter as string,
+        crop: element.crop as {
+          top: number;
+          right: number;
+          bottom: number;
+          left: number;
+        } | null,
+      });
       break;
     }
   }
