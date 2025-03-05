@@ -278,7 +278,6 @@ export function DraggableElement({
       if (onUpdateCrop) {
         onUpdateCrop(element.id, newCropValues);
       }
-
     };
 
     const handleEnd = () => {
@@ -354,7 +353,7 @@ export function DraggableElement({
                 <div
                   className={`relative ${
                     element.filter ? `filter-${element.filter}` : ""
-                  }`}
+                  } border-2 border-red-500`}
                   onClick={handleDoubleClick}
                   style={{
                     width:
@@ -374,7 +373,7 @@ export function DraggableElement({
                     alt="User uploaded"
                     width={element.width || imageDimensions.width}
                     height={element.height || imageDimensions.height}
-                    className="object-cover"
+                    className="object-cover w-full h-full"
                     style={{
                       pointerEvents: "none",
                       position: "absolute",
@@ -403,6 +402,12 @@ export function DraggableElement({
                       px
                     </div>
                   )}
+
+                  {/* Optional: Add container dimensions display */}
+                  <div className="absolute bottom-0 right-0 bg-red-500 text-white text-xs px-1">
+                    {Math.round(element.width || 0)}x
+                    {Math.round(element.height || 0)}
+                  </div>
                 </div>
                 {element.type === "image" && isSelected && (
                   <>
