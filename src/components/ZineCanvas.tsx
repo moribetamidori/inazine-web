@@ -47,6 +47,8 @@ export default function ZineCanvas({
   const [privacy, setPrivacy] = useState(zine?.privacy || "closed");
   const [isLoadingPrivacy, setIsLoadingPrivacy] = useState(false);
   const [isProcessingAutoLayout, setIsProcessingAutoLayout] = useState(false);
+  const [currentBackgroundColor, setCurrentBackgroundColor] =
+    useState<string>("#ffffff");
 
   // Add this function to toggle privacy
   const togglePrivacy = async () => {
@@ -513,6 +515,91 @@ export default function ZineCanvas({
     }
   };
 
+  const setBackgroundColor = useCallback(
+    async (color: string) => {
+      if (!pages[currentPage]?.id) return;
+
+      // Check if there's already a background element (assumed to be at z-index 0)
+      const existingBackgroundIndex = pages[currentPage]?.elements.findIndex(
+        (el) => el.z_index === 0 && el.type === "image"
+      );
+
+      // Create a solid color image data URL
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+
+      ctx.fillStyle = color;
+      ctx.fillRect(0, 0, width, height);
+      const dataUrl = canvas.toDataURL("image/png");
+
+      if (existingBackgroundIndex >= 0) {
+        // Update existing background
+        const updatedPages = [...pages];
+        const updatedElements = [...updatedPages[currentPage].elements];
+        updatedElements[existingBackgroundIndex] = {
+          ...updatedElements[existingBackgroundIndex],
+          content: dataUrl,
+        };
+        updatedPages[currentPage] = {
+          ...updatedPages[currentPage],
+          elements: updatedElements,
+        };
+        setPages(updatedPages);
+      } else {
+        // Create new background element
+        try {
+          const newElement = await createElement({
+            page_id: pages[currentPage].id,
+            type: "image",
+            content: dataUrl,
+            position_x: 0,
+            position_y: 0,
+            width: width,
+            height: height,
+            scale: 1,
+            z_index: 0, // Set to 0 to ensure it's at the bottom
+            filter: "none",
+            crop: null,
+          });
+
+          setPages(
+            pages.map((page, index) =>
+              index === currentPage
+                ? {
+                    ...page,
+                    elements: [
+                      {
+                        ...newElement,
+                        type: newElement.type as "text" | "image",
+                        filter: "none",
+                        crop: null,
+                      },
+                      ...page.elements.map((el) => ({
+                        ...el,
+                        z_index: el.z_index + 1, // Increment z-index of all other elements
+                      })),
+                    ],
+                  }
+                : page
+            )
+          );
+        } catch (error) {
+          console.error("Error adding background element:", error);
+        }
+      }
+    },
+    [pages, currentPage, width, height, setPages]
+  );
+
+  // Remove the duplicate declaration and just keep this function
+  const handleSetBackgroundColor = (color: string) => {
+    setCurrentBackgroundColor(color);
+    setBackgroundColor(color);
+  };
+
   return (
     <div className="relative rounded-lg h-screen">
       <div className="flex h-[90vh]">
@@ -636,6 +723,8 @@ export default function ZineCanvas({
               isLoadingPrivacy={isLoadingPrivacy}
               onAutoLayoutImages={handleAutoLayoutImages}
               isProcessingAutoLayout={isProcessingAutoLayout}
+              setBackgroundColor={handleSetBackgroundColor}
+              currentBackgroundColor={currentBackgroundColor}
             />
           </div>
         </div>

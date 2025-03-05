@@ -93,6 +93,12 @@ export default function Thumbnail({
   addNewPage,
   setPages,
 }: ThumbnailProps) {
+  // Add these states to track thumbnail selection and mouse position
+  const [isThumbnailSelected, setIsThumbnailSelected] = React.useState(false);
+  const thumbnailContainerRef = React.useRef<HTMLDivElement>(null);
+  // Use refs for mouse position instead of window properties
+  const mousePositionRef = React.useRef({ x: 0, y: 0 });
+
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -171,6 +177,53 @@ export default function Thumbnail({
     }
   };
 
+  // Track when thumbnail is clicked
+  const handleThumbnailClick = (index: number) => {
+    setCurrentPage(index);
+    setIsThumbnailSelected(true);
+  };
+
+  // Check if mouse is within thumbnail container
+  const isMouseInThumbnailArea = (): boolean => {
+    if (!thumbnailContainerRef.current) return false;
+
+    const rect = thumbnailContainerRef.current.getBoundingClientRect();
+    const { x: mouseX, y: mouseY } = mousePositionRef.current;
+
+    return (
+      mouseX >= rect.left &&
+      mouseX <= rect.right &&
+      mouseY >= rect.top &&
+      mouseY <= rect.bottom
+    );
+  };
+
+  // Track mouse position with ref
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      mousePositionRef.current = { x: e.clientX, y: e.clientY };
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+
+    // Reset selection when clicking outside thumbnail area
+    const handleGlobalClick = (e: MouseEvent) => {
+      if (
+        thumbnailContainerRef.current &&
+        !thumbnailContainerRef.current.contains(e.target as Node)
+      ) {
+        setIsThumbnailSelected(false);
+      }
+    };
+
+    window.addEventListener("click", handleGlobalClick);
+
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("click", handleGlobalClick);
+    };
+  }, []);
+
   // Add keyboard event listener for delete key
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -179,11 +232,17 @@ export default function Thumbnail({
         document.activeElement?.tagName === "INPUT" ||
         document.activeElement?.tagName === "TEXTAREA";
 
-      // Only handle delete if no input is focused and we have a current page
+      // Only handle delete if:
+      // 1. No input is focused
+      // 2. We have a current page
+      // 3. The thumbnail is selected
+      // 4. Mouse is within the thumbnail area
       if (
         !isInputFocused &&
         (e.key === "Delete" || e.key === "Backspace") &&
-        pages.length > 0
+        pages.length > 0 &&
+        isThumbnailSelected &&
+        isMouseInThumbnailArea()
       ) {
         e.preventDefault();
         handleDeletePage();
@@ -192,10 +251,13 @@ export default function Thumbnail({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [currentPage, pages]);
+  }, [currentPage, pages, isThumbnailSelected]);
 
   return (
-    <div className="w-24 bg-gray-100 overflow-y-auto border-r border-gray-200 flex flex-col gap-2 p-2">
+    <div
+      ref={thumbnailContainerRef}
+      className="w-24 bg-gray-100 overflow-y-auto border-r border-gray-200 flex flex-col gap-2 p-2"
+    >
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
@@ -213,7 +275,7 @@ export default function Thumbnail({
                 index={index}
                 isCurrentPage={currentPage === index}
                 onClick={() => {
-                  setCurrentPage(index);
+                  handleThumbnailClick(index);
                 }}
               />
             ))}

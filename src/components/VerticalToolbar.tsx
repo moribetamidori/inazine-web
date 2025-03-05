@@ -23,6 +23,8 @@ interface VerticalToolbarProps {
   isLoadingPrivacy?: boolean;
   onAutoLayoutImages: (files: File[]) => void;
   isProcessingAutoLayout: boolean;
+  setBackgroundColor: (color: string) => void;
+  currentBackgroundColor?: string;
 }
 
 interface StickerCollection {
@@ -111,6 +113,8 @@ export function VerticalToolbar({
   isLoadingPrivacy = false,
   onAutoLayoutImages,
   isProcessingAutoLayout,
+  setBackgroundColor,
+  currentBackgroundColor,
 }: VerticalToolbarProps) {
   const [isAddingSticker, setIsAddingSticker] = useState(false);
   const [expandedCollection, setExpandedCollection] = useState<string | null>(
@@ -188,6 +192,30 @@ export function VerticalToolbar({
           {Math.round(scale * 100)}%
         </span>
       </span>
+
+      <div className="mt-2 px-2 flex flex-col gap-2">
+        <span className="text-gray-500 flex items-center gap-2">
+          <label
+            htmlFor="page-bg-color"
+            className="text-sm font-medium text-gray-700"
+          >
+            Page Background:
+          </label>
+          <div className="flex items-center gap-2">
+            <input
+              type="color"
+              id="page-bg-color"
+              value={currentBackgroundColor || "#ffffff"}
+              onChange={(e) => setBackgroundColor(e.target.value)}
+              className="w-8 h-8 border border-gray-300 rounded cursor-pointer"
+              title="Choose page background color"
+            />
+            <span className="text-xs font-mono">
+              {currentBackgroundColor || "#ffffff"}
+            </span>
+          </div>
+        </span>
+      </div>
 
       <ImageDropZone
         onImagesSelected={onAutoLayoutImages}
