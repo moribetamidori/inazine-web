@@ -378,6 +378,7 @@ export default function ZineCanvas({
   };
 
   const handleAutoLayoutImages = async (files: File[]) => {
+    const testCount = null;
     if (!zine?.id || files.length === 0) return;
 
     setIsProcessingAutoLayout(true);
@@ -444,10 +445,13 @@ export default function ZineCanvas({
         })
       );
 
+      // If testCount is provided, only use that many images
+      const imagesToUse = testCount
+        ? processedImages.slice(0, testCount)
+        : processedImages;
+
       // Shuffle the images for randomness
-      const shuffledImages = [...processedImages].sort(
-        () => Math.random() - 0.5
-      );
+      const shuffledImages = [...imagesToUse].sort(() => Math.random() - 0.5);
 
       // Create a copy of the current pages
       let updatedPages = [...pages];
@@ -460,15 +464,9 @@ export default function ZineCanvas({
         currentPageIndex = updatedPages.length - 1;
       }
 
-      // Process images in batches
-      while (shuffledImages.length > 0) {
-        // Determine how many images to place on this page (random between 1-6)
-        const imagesPerPage = Math.min(
-          Math.floor(Math.random() * 6) + 1,
-          shuffledImages.length
-        );
-
-        // Get the current page or create a new one if needed
+      // If testCount is provided, use all images on one page
+      if (testCount) {
+        // Get the current page
         let currentPage = updatedPages[currentPageIndex];
 
         if (!currentPage) {
@@ -478,12 +476,9 @@ export default function ZineCanvas({
           currentPageIndex = updatedPages.length - 1;
         }
 
-        // Take a batch of images
-        const imageBatch = shuffledImages.splice(0, imagesPerPage);
-
         // Create a layout for these images
         const elements = await createLayoutForImages(
-          imageBatch,
+          shuffledImages,
           currentPage.id,
           width,
           height
@@ -494,12 +489,49 @@ export default function ZineCanvas({
           ...currentPage,
           elements: [...currentPage.elements, ...elements],
         };
+      } else {
+        // Original logic for distributing across multiple pages
+        while (shuffledImages.length > 0) {
+          // Determine how many images to place on this page based on total image count
+          const maxImagesPerPage = shuffledImages.length > 12 ? 9 : 6;
+          const imagesPerPage = Math.min(
+            Math.floor(Math.random() * maxImagesPerPage) + 1,
+            shuffledImages.length
+          );
 
-        // Move to next page for the next batch
-        if (shuffledImages.length > 0) {
-          const newPage = await createPage(zine.id);
-          updatedPages.push({ ...newPage, elements: [] });
-          currentPageIndex = updatedPages.length - 1;
+          // Get the current page or create a new one if needed
+          let currentPage = updatedPages[currentPageIndex];
+
+          if (!currentPage) {
+            const newPage = await createPage(zine.id);
+            currentPage = { ...newPage, elements: [] };
+            updatedPages.push(currentPage);
+            currentPageIndex = updatedPages.length - 1;
+          }
+
+          // Take a batch of images
+          const imageBatch = shuffledImages.splice(0, imagesPerPage);
+
+          // Create a layout for these images
+          const elements = await createLayoutForImages(
+            imageBatch,
+            currentPage.id,
+            width,
+            height
+          );
+
+          // Add elements to the current page
+          updatedPages[currentPageIndex] = {
+            ...currentPage,
+            elements: [...currentPage.elements, ...elements],
+          };
+
+          // Move to next page for the next batch
+          if (shuffledImages.length > 0) {
+            const newPage = await createPage(zine.id);
+            updatedPages.push({ ...newPage, elements: [] });
+            currentPageIndex = updatedPages.length - 1;
+          }
         }
       }
 

@@ -19,7 +19,7 @@ export const createLayoutForImages = async (
   const elements: Element[] = [];
   const padding = 40;
   const zIndexStart = 1;
-  const forceLayout = false;     
+  const forceLayout = false;
 
   // For multiple images, use a consistent aspect ratio for all containers
   const containerAspectRatio = 3 / 4; // Standard portrait aspect ratio
@@ -28,22 +28,26 @@ export const createLayoutForImages = async (
   let layoutType:
     | "singleFull"
     | "single"
+    | "singleSquare"
     | "sideBySide"
     | "grid"
     | "verticalStack";
 
   // If forceLayout is provided, use it instead of random selection
   if (forceLayout) {
-    layoutType = "singleFull";
+    layoutType = "grid";
   } else if (imageUrls.length === 1) {
-    // With only one image, randomly choose between single and singleFull
+    // With only one image, randomly choose between single, singleFull, and singleSquare
     const randomValue = Math.random();
-    if (randomValue < 0.5) {
-      // 50% chance for singleFull (full canvas)
+    if (randomValue < 0.33) {
+      // 33% chance for singleFull (full canvas)
       layoutType = "singleFull";
-    } else {
-      // 50% chance for single (centered with padding)
+    } else if (randomValue < 0.67) {
+      // 33% chance for single (centered with padding)
       layoutType = "single";
+    } else {
+      // 33% chance for singleSquare (square in center)
+      layoutType = "singleSquare";
     }
   } else {
     // For multiple images, randomly choose a layout
@@ -58,16 +62,22 @@ export const createLayoutForImages = async (
         layoutType = "verticalStack";
       }
     } else if (imageUrls.length <= 4) {
-      if (randomValue < 0.6) {
-        // 60% chance to use vertical stack for 3-4 images (increased from 20%)
+      // For 2-4 images, choose between vertical stack and grid
+      if (imageUrls.length === 3 || randomValue < 0.6) {
+        // Use vertical stack for 3 images, or 60% chance for 2 or 4 images
         layoutType = "verticalStack";
       } else {
-        // 40% chance to use grid layout
+        // 40% chance to use grid layout for 2 or 4 images
         layoutType = "grid";
       }
     } else {
-      // Default to grid layout for more than 4 images
-      layoutType = "grid";
+      // For more than 4 images, use grid for specific counts that work well in grids
+      if (imageUrls.length === 6 || imageUrls.length === 9) {
+        // 2x3 grid for 6 images, 3x3 grid for 9 images
+        layoutType = "grid";
+      } else {
+        layoutType = "verticalStack";
+      }
     }
   }
 
@@ -88,6 +98,40 @@ export const createLayoutForImages = async (
         position_y: y,
         width: containerWidth,
         height: containerHeight,
+        scale: 1,
+        z_index: zIndexStart,
+        filter: "none",
+        crop: null,
+      });
+
+      elements.push({
+        ...element,
+        type: element.type as "text" | "image",
+        filter: element.filter as string,
+        crop: element.crop as {
+          top: number;
+          right: number;
+          bottom: number;
+          left: number;
+        } | null,
+      });
+      break;
+    }
+
+    case "singleSquare": {
+      // Single square image centered on the page
+      const squareSize = Math.min(canvasWidth, canvasHeight) * 0.6; // 60% of the smaller dimension
+      const x = (canvasWidth - squareSize) / 2;
+      const y = (canvasHeight - squareSize) / 2;
+
+      const element = await createElement({
+        page_id: pageId,
+        type: "image",
+        content: imageUrls[0],
+        position_x: x,
+        position_y: y,
+        width: squareSize,
+        height: squareSize,
         scale: 1,
         z_index: zIndexStart,
         filter: "none",
@@ -234,8 +278,27 @@ export const createLayoutForImages = async (
 
     case "grid": {
       // Grid layout for multiple images
-      const cols = imageUrls.length <= 4 ? 2 : 3;
-      const rows = Math.ceil(imageUrls.length / cols);
+      let cols: number;
+      let rows: number;
+
+      // Determine grid dimensions based on image count
+      if (imageUrls.length === 2) {
+        cols = 2;
+        rows = 1;
+      } else if (imageUrls.length === 4) {
+        cols = 2;
+        rows = 2;
+      } else if (imageUrls.length === 6) {
+        cols = 3;
+        rows = 2;
+      } else if (imageUrls.length === 9) {
+        cols = 3;
+        rows = 3;
+      } else {
+        // Default grid dimensions for other counts
+        cols = imageUrls.length <= 4 ? 2 : 3;
+        rows = Math.ceil(imageUrls.length / cols);
+      }
 
       // Fixed container width based on available space
       const containerWidth = (canvasWidth - (cols + 1) * padding) / cols;
