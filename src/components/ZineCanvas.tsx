@@ -45,6 +45,7 @@ export default function ZineCanvas({
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
   const [privacy, setPrivacy] = useState(zine?.privacy || "closed");
   const [isLoadingPrivacy, setIsLoadingPrivacy] = useState(false);
+  const [isProcessingAutoLayout, setIsProcessingAutoLayout] = useState(false);
 
   // Add this function to toggle privacy
   const togglePrivacy = async () => {
@@ -373,6 +374,244 @@ export default function ZineCanvas({
     await updateElementCrop(id, crop, pages, currentPage, setPages);
   };
 
+  const handleAutoLayoutImages = async (files: File[]) => {
+    if (!zine?.id || files.length === 0) return;
+
+    setIsProcessingAutoLayout(true);
+
+    try {
+      // Process all images first to get their data URLs
+      const processedImages = await Promise.all(
+        files.map(async (file) => {
+          return new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+              try {
+                let imgSrc = e.target?.result as string;
+
+                // Check if HEIC format and convert if needed (reusing your existing code)
+                const isHeic =
+                  file.type === "image/heic" ||
+                  file.name.toLowerCase().endsWith(".heic") ||
+                  file.name.toLowerCase().endsWith(".heif");
+
+                if (isHeic) {
+                  try {
+                    const heic2any = (await import("heic2any")).default;
+                    const pngBlob = await heic2any({
+                      blob: file,
+                      toType: "image/png",
+                      quality: 0.8,
+                    });
+
+                    imgSrc = await new Promise<string>((resolve) => {
+                      const reader = new FileReader();
+                      reader.onloadend = () => resolve(reader.result as string);
+                      reader.readAsDataURL(pngBlob as Blob);
+                    });
+                  } catch (heicError) {
+                    console.error("Error converting HEIC image:", heicError);
+                  }
+                }
+
+                // Convert to WebP for better performance
+                const img = new Image();
+                img.src = imgSrc;
+
+                await new Promise((resolve) => (img.onload = resolve));
+
+                const canvas = document.createElement("canvas");
+                canvas.width = img.width;
+                canvas.height = img.height;
+
+                const ctx = canvas.getContext("2d");
+                if (!ctx) throw new Error("Could not get canvas context");
+
+                ctx.drawImage(img, 0, 0);
+                const webpData = canvas.toDataURL("image/webp", 0.8);
+
+                resolve(webpData);
+              } catch (error) {
+                reject(error);
+              }
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+          });
+        })
+      );
+
+      // Shuffle the images for randomness
+      const shuffledImages = [...processedImages].sort(
+        () => Math.random() - 0.5
+      );
+
+      // Create a copy of the current pages
+      let updatedPages = [...pages];
+      let currentPageIndex = pages.length - 1;
+
+      // If the current page already has elements, create a new page
+      if (pages[currentPageIndex]?.elements.length > 0) {
+        const newPage = await createPage(zine.id);
+        updatedPages = [...updatedPages, { ...newPage, elements: [] }];
+        currentPageIndex = updatedPages.length - 1;
+      }
+
+      // Process images in batches
+      while (shuffledImages.length > 0) {
+        // Determine how many images to place on this page (random between 1-6)
+        const imagesPerPage = Math.min(
+          Math.floor(Math.random() * 6) + 1,
+          shuffledImages.length
+        );
+
+        // Get the current page or create a new one if needed
+        let currentPage = updatedPages[currentPageIndex];
+
+        if (!currentPage) {
+          const newPage = await createPage(zine.id);
+          currentPage = { ...newPage, elements: [] };
+          updatedPages.push(currentPage);
+          currentPageIndex = updatedPages.length - 1;
+        }
+
+        // Take a batch of images
+        const imageBatch = shuffledImages.splice(0, imagesPerPage);
+
+        // Create a layout for these images
+        const elements = await createLayoutForImages(
+          imageBatch,
+          currentPage.id,
+          width,
+          height
+        );
+
+        // Add elements to the current page
+        updatedPages[currentPageIndex] = {
+          ...currentPage,
+          elements: [...currentPage.elements, ...elements],
+        };
+
+        // Move to next page for the next batch
+        if (shuffledImages.length > 0) {
+          const newPage = await createPage(zine.id);
+          updatedPages.push({ ...newPage, elements: [] });
+          currentPageIndex = updatedPages.length - 1;
+        }
+      }
+
+      // Update pages state
+      setPages(updatedPages);
+
+      // Set current page to the last page created
+      setCurrentPage(updatedPages.length - 1);
+    } catch (error) {
+      console.error("Error in auto layout:", error);
+    } finally {
+      setIsProcessingAutoLayout(false);
+    }
+  };
+
+  // Add this helper function to create a layout for a batch of images
+  const createLayoutForImages = async (
+    imageUrls: string[],
+    pageId: string,
+    canvasWidth: number,
+    canvasHeight: number
+  ): Promise<Element[]> => {
+    // Different layout strategies based on number of images
+    const elements: Element[] = [];
+    const padding = 40; // Padding from edges and between images
+    const zIndexStart = 1;
+
+    switch (imageUrls.length) {
+      case 1: {
+        // Single centered image
+        const imgWidth = canvasWidth * 0.7;
+        const imgHeight = canvasHeight * 0.7;
+        const x = (canvasWidth - imgWidth) / 2;
+        const y = (canvasHeight - imgHeight) / 2;
+
+        const element = await createElement({
+          page_id: pageId,
+          type: "image",
+          content: imageUrls[0],
+          position_x: x,
+          position_y: y,
+          width: imgWidth,
+          height: imgHeight,
+          scale: 1,
+          z_index: zIndexStart,
+          filter: "none",
+          crop: null,
+        });
+
+        elements.push({
+          ...element,
+          type: element.type as "text" | "image",
+          filter: element.filter as string,
+          crop: element.crop as {
+            top: number;
+            right: number;
+            bottom: number;
+            left: number;
+          } | null,
+        });
+        break;
+      }
+
+      default: {
+        // Grid layout for multiple images
+        const cols = imageUrls.length <= 4 ? 2 : 3;
+        const rows = Math.ceil(imageUrls.length / cols);
+
+        const imgWidth = (canvasWidth - (cols + 1) * padding) / cols;
+        const imgHeight = (canvasHeight - (rows + 1) * padding) / rows;
+
+        for (let i = 0; i < imageUrls.length; i++) {
+          const col = i % cols;
+          const row = Math.floor(i / cols);
+
+          const x = padding + col * (imgWidth + padding);
+          const y = padding + row * (imgHeight + padding);
+
+          // Add some randomness to position and size
+          const randomOffset = Math.random() * 20 - 10;
+          const randomSize = 0.9 + Math.random() * 0.2;
+
+          const element = await createElement({
+            page_id: pageId,
+            type: "image",
+            content: imageUrls[i],
+            position_x: x + randomOffset,
+            position_y: y + randomOffset,
+            width: imgWidth * randomSize,
+            height: imgHeight * randomSize,
+            scale: 1,
+            z_index: zIndexStart + i,
+            filter: "none",
+            crop: null,
+          });
+
+          elements.push({
+            ...element,
+            type: element.type as "text" | "image",
+            filter: element.filter as string,
+            crop: element.crop as {
+              top: number;
+              right: number;
+              bottom: number;
+              left: number;
+            } | null,
+          });
+        }
+        break;
+      }
+    }
+
+    return elements;
+  };
+
   return (
     <div className="relative rounded-lg h-screen">
       <div className="flex h-[90vh]">
@@ -494,6 +733,8 @@ export default function ZineCanvas({
               privacy={privacy}
               togglePrivacy={togglePrivacy}
               isLoadingPrivacy={isLoadingPrivacy}
+              onAutoLayoutImages={handleAutoLayoutImages}
+              isProcessingAutoLayout={isProcessingAutoLayout}
             />
           </div>
         </div>

@@ -43,6 +43,7 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-draggable": "^4.4.6",
+    "react-dropzone": "^14.3.8",
     "react-image-crop": "^11.0.7",
     "react-image-file-resizer": "^0.4.8",
     "react-pageflip": "^2.0.3",

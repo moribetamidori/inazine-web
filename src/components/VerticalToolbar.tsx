@@ -5,6 +5,7 @@ import PuzzlePieceIcon from "@heroicons/react/24/outline/PuzzlePieceIcon";
 import LockClosedIcon from "@heroicons/react/24/outline/LockClosedIcon";
 import LockOpenIcon from "@heroicons/react/24/outline/LockOpenIcon";
 import { useState } from "react";
+import { ImageDropZone } from "./ImageDropZone";
 
 interface VerticalToolbarProps {
   currentFilter: string;
@@ -20,6 +21,8 @@ interface VerticalToolbarProps {
   privacy: string;
   togglePrivacy: () => void;
   isLoadingPrivacy?: boolean;
+  onAutoLayoutImages: (files: File[]) => void;
+  isProcessingAutoLayout: boolean;
 }
 
 interface StickerCollection {
@@ -106,6 +109,8 @@ export function VerticalToolbar({
   privacy,
   togglePrivacy,
   isLoadingPrivacy = false,
+  onAutoLayoutImages,
+  isProcessingAutoLayout,
 }: VerticalToolbarProps) {
   const [isAddingSticker, setIsAddingSticker] = useState(false);
   const [expandedCollection, setExpandedCollection] = useState<string | null>(
@@ -183,6 +188,11 @@ export function VerticalToolbar({
           {Math.round(scale * 100)}%
         </span>
       </span>
+
+      <ImageDropZone
+        onImagesSelected={onAutoLayoutImages}
+        isProcessing={isProcessingAutoLayout}
+      />
 
       <div className="px-4 flex flex-col gap-2">
         {!disabled && (
