@@ -103,8 +103,8 @@ export default function Thumbnail({
     useSensor(PointerSensor, {
       activationConstraint: {
         distance: 8,
-        delay: 250, // Increased to provide more time for clicking
-        tolerance: 5, // Reduced for better precision
+        delay: 100, // Increased to provide more time for clicking
+        tolerance: 20, // Reduced for better precision
       },
     }),
     useSensor(KeyboardSensor, {
