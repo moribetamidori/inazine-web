@@ -4,6 +4,7 @@ import EyeIcon from "@heroicons/react/24/outline/EyeIcon";
 import PuzzlePieceIcon from "@heroicons/react/24/outline/PuzzlePieceIcon";
 import LockClosedIcon from "@heroicons/react/24/outline/LockClosedIcon";
 import LockOpenIcon from "@heroicons/react/24/outline/LockOpenIcon";
+import ScissorsIcon from "@heroicons/react/24/outline/ScissorsIcon";
 import { useState } from "react";
 import { ImageDropZone } from "./ImageDropZone";
 
@@ -25,6 +26,9 @@ interface VerticalToolbarProps {
   isProcessingAutoLayout: boolean;
   setBackgroundColor: (color: string) => void;
   currentBackgroundColor?: string;
+  removeImageBackground?: () => Promise<void>;
+  isRemovingBackground?: boolean;
+  hasSelectedImage?: boolean;
 }
 
 interface StickerCollection {
@@ -115,6 +119,9 @@ export function VerticalToolbar({
   isProcessingAutoLayout,
   setBackgroundColor,
   currentBackgroundColor,
+  removeImageBackground,
+  isRemovingBackground = false,
+  hasSelectedImage = false,
 }: VerticalToolbarProps) {
   const [isAddingSticker, setIsAddingSticker] = useState(false);
   const [expandedCollection, setExpandedCollection] = useState<string | null>(
@@ -177,6 +184,24 @@ export function VerticalToolbar({
             <LockClosedIcon className="size-6" />
           )}
         </button>
+        {removeImageBackground && (
+          <button
+            onClick={removeImageBackground}
+            disabled={isRemovingBackground || !hasSelectedImage}
+            title="Remove image background"
+            className={`p-1 w-10 h-10 rounded items-center flex justify-center ${
+              isRemovingBackground || !hasSelectedImage
+                ? "bg-gray-300 cursor-not-allowed"
+                : "bg-black text-white hover:bg-gray-800"
+            }`}
+          >
+            {isRemovingBackground ? (
+              <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
+            ) : (
+              <ScissorsIcon className="size-6" />
+            )}
+          </button>
+        )}
       </div>
       <span className="text-gray-500 flex items-center gap-2 ml-2">
         {/* Scale: {Math.round(scale * 100)}% */}

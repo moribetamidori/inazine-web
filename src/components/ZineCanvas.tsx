@@ -21,6 +21,7 @@ import { createElement } from "@/lib/element";
 import { VerticalToolbar } from "./VerticalToolbar";
 import Thumbnail from "@/components/Thumbnail";
 import { createLayoutForImages } from "@/lib/layout";
+import { removeBackground } from "@imgly/background-removal";
 
 interface ZineCanvasProps {
   width?: number;
@@ -49,6 +50,7 @@ export default function ZineCanvas({
   const [isProcessingAutoLayout, setIsProcessingAutoLayout] = useState(false);
   const [currentBackgroundColor, setCurrentBackgroundColor] =
     useState<string>("#ffffff");
+  const [isRemovingBackground, setIsRemovingBackground] = useState(false);
 
   // Add this function to toggle privacy
   const togglePrivacy = async () => {
@@ -496,13 +498,13 @@ export default function ZineCanvas({
           let imagesPerPage;
           const rand = Math.random();
 
-          if (rand < 0.80) {
+          if (rand < 0.8) {
             // 50% chance for 1-2 images
             imagesPerPage = Math.random() < 0.35 ? 1 : 2;
           } else if (rand < 0.85) {
             // 20% chance for 3-4 images
             imagesPerPage = Math.random() < 0.3 ? 3 : 4;
-          } else if (rand < 0.90) {
+          } else if (rand < 0.9) {
             // 15% chance for 5-6 images
             imagesPerPage = Math.random() < 0.2 ? 5 : 6;
           } else if (rand < 0.95) {
@@ -649,6 +651,54 @@ export default function ZineCanvas({
     setBackgroundColor(color);
   };
 
+  // Add this new function for background removal
+  const handleRemoveBackground = async () => {
+    if (!selectedImageId) return;
+
+    // Find the selected element
+    const selectedElement = pages[currentPage]?.elements.find(
+      (el) => el.id === selectedImageId && el.type === "image"
+    );
+
+    if (!selectedElement) return;
+
+    // Remove focus from any active editor elements to prevent editor-related errors
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+
+    setIsRemovingBackground(true);
+    try {
+      // Get the image URL from the selected element
+      const imageUrl = selectedElement.content;
+
+      // Process the image with background removal
+      const blob = await fetch(imageUrl).then((r) => r.blob());
+      const processedImageBlob = await removeBackground(blob, {
+        // Optional configuration parameters
+        // publicPath: '/path-to-models/', // If you need to specify a custom path to the model files
+        debug: false, // Disable debug logging unless needed
+      });
+
+      // Create a new URL for the processed image
+      const processedImageUrl = URL.createObjectURL(processedImageBlob);
+
+      // Update the element with the new image URL
+      await handleUpdateContent(
+        selectedImageId,
+        processedImageUrl,
+        pages,
+        currentPage,
+        setPages
+      );
+    } catch (error) {
+      console.error("Failed to remove background:", error);
+      // Could add an error notification here
+    } finally {
+      setIsRemovingBackground(false);
+    }
+  };
+
   return (
     <div className="relative rounded-lg h-screen">
       <div className="flex h-[90vh]">
@@ -774,6 +824,13 @@ export default function ZineCanvas({
               isProcessingAutoLayout={isProcessingAutoLayout}
               setBackgroundColor={handleSetBackgroundColor}
               currentBackgroundColor={currentBackgroundColor}
+              removeImageBackground={handleRemoveBackground}
+              isRemovingBackground={isRemovingBackground}
+              hasSelectedImage={
+                !!pages[currentPage]?.elements.find(
+                  (el) => el.id === selectedImageId && el.type === "image"
+                )
+              }
             />
           </div>
         </div>
