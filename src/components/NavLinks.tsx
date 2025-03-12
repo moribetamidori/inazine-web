@@ -2,73 +2,71 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 
-export default function NavLinks({
-  zineTitle,
-  zineId,
-}: {
+interface NavLinksProps {
   zineTitle?: string;
   zineId?: string;
-}) {
+}
+
+export default function NavLinks({ zineTitle, zineId }: NavLinksProps) {
   const pathname = usePathname();
   const { user } = useAuth();
 
-  const isProfile = user && pathname.includes(`/${user.id}/profile`);
-  const isExplore = pathname.includes("/explore");
+  const isProfile = user && pathname?.includes(`/${user.id}/profile`);
+  const isExplore = pathname?.includes("/explore");
   const isFeed = pathname === "/home";
-  const isEdit = user && pathname.includes(`/${user.id}/${zineId}`);
+  const isEdit = user && zineId && pathname?.includes(`/${user.id}/${zineId}`);
 
   return (
-    <div className="mb-2">
-      <h1 className="text-xl">
-        {user ? (
-          <Link href="/home" className={isFeed ? "font-bold" : ""}>
-            Inazine / Feed
-          </Link>
-        ) : (
-          <Link href="/" className="font-bold">
-            Inazine
-          </Link>
-        )}{" "}
-        ·{" "}
-        <Link
-          href="/explore"
-          className={!zineTitle && isExplore ? "font-bold" : ""}
-        >
-          Explore
-        </Link>
-        {user && !zineTitle && (
-          <>
-            {" "}
-            ·{" "}
-            <Link
-              href={`/${user.id}/profile`}
-              className={isProfile ? "font-bold" : ""}
-            >
-              Profile
+    <div className="mb-8">
+      {zineTitle && zineId ? (
+        <div className="flex items-center gap-2 mb-6">
+          <h1 className="text-xl font-medium">{zineTitle}</h1>
+          <span className="text-gray-500">|</span>
+          {isEdit ? (
+            <span className="text-blue-500">Editing</span>
+          ) : (
+            <Link href={`/${user?.id}/${zineId}`}>
+              <span className="text-blue-500 hover:underline">Edit</span>
             </Link>
-          </>
-        )}
-        {zineTitle && isExplore && (
-          <>
-            <span className="font-bold"> / </span>
-            <span className="font-bold">{zineTitle}</span>
-          </>
-        )}
-        {zineTitle && isEdit && (
-          <>
-            {" "}
-            ·{" "}
-            <Link
-              href={`/${user.id}/profile`}
-              className={isProfile ? "font-bold" : ""}
+          )}
+        </div>
+      ) : (
+        <nav className="flex gap-6 mb-6">
+          <Link href="/home">
+            <span
+              className={`${
+                isFeed ? "font-semibold" : "text-gray-500 hover:text-gray-800"
+              }`}
             >
-              Profile
+              Feed
+            </span>
+          </Link>
+          <Link href="/explore">
+            <span
+              className={`${
+                isExplore
+                  ? "font-semibold"
+                  : "text-gray-500 hover:text-gray-800"
+              }`}
+            >
+              Explore
+            </span>
+          </Link>
+          {user && (
+            <Link href={`/${user.id}/profile`}>
+              <span
+                className={`${
+                  isProfile
+                    ? "font-semibold"
+                    : "text-gray-500 hover:text-gray-800"
+                }`}
+              >
+                Profile
+              </span>
             </Link>
-            <span className="font-bold"> / </span>
-            <span className="font-bold">{zineTitle}</span>
-          </>
-        )}
-      </h1>
+          )}
+        </nav>
+      )}
     </div>
   );
 }

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import AuthenticatedLayout from "@/components/AuthenticatedLayout";
 import { getZineById } from "@/lib/zine";
-import { getPreviewsByZineId } from "@/lib/page";
+import { getPagesByZineId } from "@/lib/page";
 import type { Zine } from "@/types/zine";
 import ZineBook from "@/components/ZineBook";
 
@@ -16,11 +16,13 @@ export default function ExploreZinePage() {
 
   useEffect(() => {
     async function fetchZineAndPreviews() {
+      if (!params || !params.zid) return;
+
       try {
         const zine = await getZineById(params.zid as string);
         if (zine) {
           setZine(zine);
-          const pages = await getPreviewsByZineId(zine.id);
+          const pages = await getPagesByZineId(zine.id);
           const previews = pages.map((page) => page.preview || "");
           setPreviewPages(previews);
         }
@@ -32,7 +34,7 @@ export default function ExploreZinePage() {
     }
 
     fetchZineAndPreviews();
-  }, [params.zid]);
+  }, [params]);
 
   return (
     <AuthenticatedLayout zineTitle={zine?.title} publicAccess={true}>

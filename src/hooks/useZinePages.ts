@@ -14,11 +14,17 @@ export function useZinePages(zineId: string | undefined) {
         setPages(
           fetchedPages.map((page) => ({
             ...page,
+            page_order: page.page_order || 0,
             elements: page.elements.map((el) => ({
               ...el,
               type: el.type as "text" | "image",
               filter: el.filter || "",
-              crop: el.crop as { top: number; right: number; bottom: number; left: number } | null,
+              crop: el.crop as {
+                top: number;
+                right: number;
+                bottom: number;
+                left: number;
+              } | null,
             })),
           }))
         );

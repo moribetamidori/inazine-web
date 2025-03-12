@@ -22,7 +22,7 @@ export default function ProfilePage() {
 
   useEffect(() => {
     async function fetchZines() {
-      if (!params.uid) return;
+      if (!params || !params.uid) return;
 
       try {
         const userZines = await getZinesByUserId(params.uid as string);
@@ -42,7 +42,7 @@ export default function ProfilePage() {
     }
 
     fetchZines();
-  }, [params.uid]);
+  }, [params]);
 
   if (loading) {
     return <div className="p-8">Loading...</div>;

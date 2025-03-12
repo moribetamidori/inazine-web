@@ -14,7 +14,7 @@ export default function ZinePage() {
 
   useEffect(() => {
     const fetchZine = async () => {
-      if (!params.zid || typeof params.zid !== "string") return;
+      if (!params || !params.zid || typeof params.zid !== "string") return;
 
       const { data, error } = await supabase
         .from("zines")
@@ -31,10 +31,10 @@ export default function ZinePage() {
     };
 
     fetchZine();
-  }, [params.zid, supabase]);
+  }, [params, supabase]);
 
   return (
-    <AuthenticatedLayout zineTitle={zine?.title} zineId={params.zid as string}>
+    <AuthenticatedLayout zineTitle={zine?.title} zineId={params?.zid as string}>
       <div className="min-h-screen">
         <div className="max-w-screen-2xl mx-auto">
           {zine && <ZineCanvas zine={zine} />}

@@ -27,8 +27,8 @@ export default function AuthenticatedLayout({
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
 
-  // Check if the current path is an explore route
-  const isExploreRoute = pathname.startsWith("/explore");
+  // Add null check for pathname
+  const isExploreRoute = pathname?.startsWith("/explore") || false;
 
   useEffect(() => {
     // Only redirect if not loading, user is not logged in, public access is not allowed,
