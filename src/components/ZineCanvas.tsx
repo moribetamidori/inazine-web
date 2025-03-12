@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import type { Zine } from "@/types/zine";
+import type { Zine, Page } from "@/types/zine";
 import ZinePreview from "./ZinePreview";
 import { createPage } from "@/lib/page";
 import {
@@ -51,6 +51,7 @@ export default function ZineCanvas({
   const [currentBackgroundColor, setCurrentBackgroundColor] =
     useState<string>("#ffffff");
   const [isRemovingBackground, setIsRemovingBackground] = useState(false);
+  const [copiedPage, setCopiedPage] = useState<Page | null>(null);
 
   // Add this function to toggle privacy
   const togglePrivacy = async () => {
@@ -119,8 +120,14 @@ export default function ZineCanvas({
 
     try {
       const newPage = await createPage(zine.id);
-      setPages([...pages, { ...newPage, elements: [] }]);
-      setCurrentPage(pages.length);
+      const newPageWithElements = { ...newPage, elements: [] };
+      
+      // Update the pages state
+      const updatedPages = [...pages, newPageWithElements];
+      setPages(updatedPages);
+      
+      // Set to the correct index (length of updated array - 1)
+      setCurrentPage(updatedPages.length - 1);
     } catch (error) {
       console.error("Error creating new page:", error);
     }
@@ -698,6 +705,110 @@ export default function ZineCanvas({
       setIsRemovingBackground(false);
     }
   };
+
+  // Function to copy the current page
+  const handleCopyPage = useCallback(() => {
+    if (!pages[currentPage]) return;
+    setCopiedPage(pages[currentPage]);
+  }, [pages, currentPage]);
+
+  // Function to paste the copied page
+  const handlePastePage = useCallback(async () => {
+    if (!copiedPage || !zine?.id) return;
+
+    try {
+      // Create a new page in the database
+      const newPage = await createPage(zine.id);
+
+      // Create all elements from the copied page in the new page
+      const newElements = await Promise.all(
+        copiedPage.elements.map(async (element) => {
+          // Create a deep copy of the element for the new page
+          const createdElement = await createElement({
+            page_id: newPage.id,
+            type: element.type,
+            content: element.content,
+            position_x: element.position_x,
+            position_y: element.position_y,
+            width: element.width,
+            height: element.height,
+            scale: element.scale,
+            z_index: element.z_index,
+            filter: element.filter,
+            crop: element.crop,
+          });
+
+          // Ensure proper typing for the element
+          return {
+            ...createdElement,
+            type: createdElement.type as "text" | "image",
+            filter: createdElement.filter as string,
+            crop: createdElement.crop as {
+              top: number;
+              right: number;
+              bottom: number;
+              left: number;
+            } | null,
+          };
+        })
+      );
+
+      // Update state with the new page and elements
+      const newPageWithElements = { ...newPage, elements: newElements };
+
+      // Insert the new page after the current page
+      const updatedPages = [
+        ...pages.slice(0, currentPage + 1),
+        newPageWithElements,
+        ...pages.slice(currentPage + 1),
+      ];
+
+      setPages(updatedPages);
+
+      // Set focus to the new page
+      setCurrentPage(currentPage + 1);
+    } catch (error) {
+      console.error("Error pasting page:", error);
+    }
+  }, [copiedPage, pages, currentPage, zine?.id]);
+
+  // Add keyboard event listener for page copy/paste
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Check if an input field is focused
+      const isInputFocused =
+        document.activeElement?.tagName === "INPUT" ||
+        document.activeElement?.tagName === "TEXTAREA" ||
+        document.activeElement?.getAttribute("contenteditable") === "true";
+
+      if (isInputFocused) return;
+
+      // Handle cmd/ctrl+c for copying page
+      if ((e.metaKey || e.ctrlKey) && e.key === "c") {
+        // If an element is selected, let the element copy handler work
+        if (!selectedImageId) {
+          e.preventDefault();
+          handleCopyPage();
+        }
+      }
+
+      // Handle cmd/ctrl+v for pasting page
+      if ((e.metaKey || e.ctrlKey) && e.key === "v") {
+        // If a page is copied and no element is being edited, paste the page
+        if (
+          copiedPage &&
+          !selectedImageId &&
+          !document.activeElement?.closest('[contenteditable="true"]')
+        ) {
+          e.preventDefault();
+          handlePastePage();
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handleCopyPage, handlePastePage, selectedImageId, copiedPage]);
 
   return (
     <div className="relative rounded-lg h-screen">
