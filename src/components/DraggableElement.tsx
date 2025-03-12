@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, RefObject } from "react";
+import { useState, useRef, useEffect, RefObject, useCallback } from "react";
 import Draggable from "react-draggable";
 import type { DraggableEvent, DraggableData } from "react-draggable";
 import type { Element } from "@/types/zine";
@@ -54,6 +54,7 @@ export function DraggableElement({
   onSelect,
   onUpdateCrop,
 }: DraggableElementProps) {
+  const isMountedRef = useRef(true);
   const nodeRef = useRef<HTMLDivElement>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
@@ -81,14 +82,21 @@ export function DraggableElement({
     elementType: element.type,
     onUpdateContent,
     onEditingEnd: () => {
-      if (isEditing) {
+      if (isEditing && isMountedRef.current) {
         setIsEditing(false);
       }
     },
   });
 
   useEffect(() => {
-    if (editor) {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (editor && isMountedRef.current) {
       editor.setEditable(isEditing);
     }
   }, [isEditing, editor]);
@@ -114,8 +122,10 @@ export function DraggableElement({
     }
   }, [element]);
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      if (!isMountedRef.current) return;
+
       const isInputFocused = document.activeElement?.tagName === "INPUT";
 
       if (isSelected && !isEditing && !isInputFocused) {
@@ -139,21 +149,23 @@ export function DraggableElement({
           onMoveLayer(element.id, "up");
         }
       }
-    };
+    },
+    [
+      isSelected,
+      isEditing,
+      element.id,
+      onDelete,
+      onCopy,
+      onMoveLayer,
+      isTopLayer,
+      isBottomLayer,
+    ]
+  );
 
+  useEffect(() => {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [
-    isSelected,
-    isEditing,
-    element.id,
-    onDelete,
-    onCopy,
-    onMoveLayer,
-    isTopLayer,
-    isBottomLayer,
-    element,
-  ]);
+  }, [handleKeyDown]);
 
   const handleDragStop = (e: DraggableEvent, data: DraggableData) => {
     const elementWidth = nodeRef.current?.offsetWidth || 0;
@@ -193,103 +205,124 @@ export function DraggableElement({
     });
   };
 
-  const handleCropStart = (
-    side: "top" | "right" | "bottom" | "left",
-    e: React.MouseEvent
-  ) => {
-    if (!nodeRef.current || element.type !== "image") return;
+  const handleCropStart = useCallback(
+    (side: "top" | "right" | "bottom" | "left", e: React.MouseEvent) => {
+      if (!isMountedRef.current || !nodeRef.current || element.type !== "image")
+        return;
 
-    console.log("CROP START:", side);
-    e.stopPropagation();
-    e.preventDefault();
+      console.log("CROP START:", side);
+      e.stopPropagation();
+      e.preventDefault();
 
-    // Fully reset crop state before starting new crop
-    setIsCropping(true);
-    cropSideRef.current = side;
+      // Fully reset crop state before starting new crop
+      setIsCropping(true);
+      cropSideRef.current = side;
 
-    // Save the initial mouse position and initial crop values
-    const initialMousePosition = { x: e.clientX, y: e.clientY };
-    const initialCropValues = { ...cropValues };
+      // Save the initial mouse position and initial crop values
+      const initialMousePosition = { x: e.clientX, y: e.clientY };
+      const initialCropValues = { ...cropValues };
 
-    // Define the move and end handlers within this closure to ensure they have access to the current state
-    const handleMove = (moveEvent: MouseEvent) => {
-      if (!cropSideRef.current) return;
+      // Define the move and end handlers within this closure to ensure they have access to the current state
+      const handleMove = (moveEvent: MouseEvent) => {
+        if (!isMountedRef.current || !cropSideRef.current) return;
 
-      // Calculate deltas relative to the initial position instead of the last position
-      const deltaX = (moveEvent.clientX - initialMousePosition.x) / scale;
-      const deltaY = (moveEvent.clientY - initialMousePosition.y) / scale;
+        // Calculate deltas relative to the initial position instead of the last position
+        const deltaX = (moveEvent.clientX - initialMousePosition.x) / scale;
+        const deltaY = (moveEvent.clientY - initialMousePosition.y) / scale;
 
-      console.log("CROP MOVE:", {
-        side: cropSideRef.current,
-        deltaX,
-        deltaY,
-        currentCrop: cropValues,
-      });
+        console.log("CROP MOVE:", {
+          side: cropSideRef.current,
+          deltaX,
+          deltaY,
+          currentCrop: cropValues,
+        });
 
-      // Create a new object for the updated crop values, starting from initial values
-      const newCropValues = { ...initialCropValues };
-      const minVisible = 20;
-      const maxWidth = element.width || imageDimensions.width;
-      const maxHeight = element.height || imageDimensions.height;
+        // Create a new object for the updated crop values, starting from initial values
+        const newCropValues = { ...initialCropValues };
+        const minVisible = 20;
+        const maxWidth = element.width || imageDimensions.width;
+        const maxHeight = element.height || imageDimensions.height;
 
-      switch (cropSideRef.current) {
-        case "left":
-          newCropValues.left = Math.max(
-            0,
-            Math.min(
-              maxWidth - minVisible - newCropValues.right,
-              initialCropValues.left + deltaX
-            )
-          );
-          break;
-        case "right":
-          newCropValues.right = Math.max(
-            0,
-            Math.min(
-              maxWidth - minVisible - newCropValues.left,
-              initialCropValues.right - deltaX
-            )
-          );
-          break;
-        case "top":
-          newCropValues.top = Math.max(
-            0,
-            Math.min(
-              maxHeight - minVisible - newCropValues.bottom,
-              initialCropValues.top + deltaY
-            )
-          );
-          break;
-        case "bottom":
-          newCropValues.bottom = Math.max(
-            0,
-            Math.min(
-              maxHeight - minVisible - newCropValues.top,
-              initialCropValues.bottom - deltaY
-            )
-          );
-          break;
-      }
+        switch (cropSideRef.current) {
+          case "left":
+            newCropValues.left = Math.max(
+              0,
+              Math.min(
+                maxWidth - minVisible - newCropValues.right,
+                initialCropValues.left + deltaX
+              )
+            );
+            break;
+          case "right":
+            newCropValues.right = Math.max(
+              0,
+              Math.min(
+                maxWidth - minVisible - newCropValues.left,
+                initialCropValues.right - deltaX
+              )
+            );
+            break;
+          case "top":
+            newCropValues.top = Math.max(
+              0,
+              Math.min(
+                maxHeight - minVisible - newCropValues.bottom,
+                initialCropValues.top + deltaY
+              )
+            );
+            break;
+          case "bottom":
+            newCropValues.bottom = Math.max(
+              0,
+              Math.min(
+                maxHeight - minVisible - newCropValues.top,
+                initialCropValues.bottom - deltaY
+              )
+            );
+            break;
+        }
 
-      console.log("NEW CROP VALUES:", newCropValues);
+        console.log("NEW CROP VALUES:", newCropValues);
 
-      // Update state
-      setCropValues(newCropValues);
-      if (onUpdateCrop) {
-        onUpdateCrop(element.id, newCropValues);
+        // Update state
+        setCropValues(newCropValues);
+        if (onUpdateCrop) {
+          onUpdateCrop(element.id, newCropValues);
+        }
+      };
+
+      const handleEnd = () => {
+        if (!isMountedRef.current) {
+          // Clean up even if not mounted
+          document.removeEventListener("mousemove", handleMove);
+          document.removeEventListener("mouseup", handleEnd);
+          return;
+        }
+
+        setIsCropping(false);
+        cropSideRef.current = null;
+        document.removeEventListener("mousemove", handleMove);
+        document.removeEventListener("mouseup", handleEnd);
+      };
+
+      document.addEventListener("mousemove", handleMove);
+      document.addEventListener("mouseup", handleEnd);
+    },
+    [element, scale, onUpdateCrop]
+  );
+
+  useEffect(() => {
+    return () => {
+      if (editor) {
+        // Allow any pending operations to complete before destroying
+        setTimeout(() => {
+          if (editor) {
+            editor.destroy();
+          }
+        }, 0);
       }
     };
-
-    const handleEnd = () => {
-      setIsCropping(false);
-      cropSideRef.current = null;
-      document.removeEventListener("mousemove", handleMove);
-      document.removeEventListener("mouseup", handleEnd);
-    };
-
-    document.addEventListener("mousemove", handleMove);
-    document.addEventListener("mouseup", handleEnd);
-  };
+  }, [editor]);
 
   return (
     <Draggable
