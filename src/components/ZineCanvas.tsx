@@ -22,6 +22,7 @@ import { VerticalToolbar } from "./VerticalToolbar";
 import Thumbnail from "@/components/Thumbnail";
 import { createLayoutForImages } from "@/lib/layout";
 import { removeBackground } from "@imgly/background-removal";
+import { createClient } from "@/lib/supabase/client";
 
 interface ZineCanvasProps {
   width?: number;
@@ -121,11 +122,11 @@ export default function ZineCanvas({
     try {
       const newPage = await createPage(zine.id);
       const newPageWithElements = { ...newPage, elements: [] };
-      
+
       // Update the pages state
       const updatedPages = [...pages, newPageWithElements];
-      setPages(updatedPages);
-      
+      setPages(updatedPages as Page[]);
+
       // Set to the correct index (length of updated array - 1)
       setCurrentPage(updatedPages.length - 1);
     } catch (error) {
@@ -469,7 +470,10 @@ export default function ZineCanvas({
       // If the current page already has elements, create a new page
       if (pages[currentPageIndex]?.elements.length > 0) {
         const newPage = await createPage(zine.id);
-        updatedPages = [...updatedPages, { ...newPage, elements: [] }];
+        updatedPages = [
+          ...updatedPages,
+          { ...newPage, elements: [], page_order: newPage.page_order || 0 },
+        ];
         currentPageIndex = updatedPages.length - 1;
       }
 
@@ -480,7 +484,11 @@ export default function ZineCanvas({
 
         if (!currentPage) {
           const newPage = await createPage(zine.id);
-          currentPage = { ...newPage, elements: [] };
+          currentPage = {
+            ...newPage,
+            elements: [],
+            page_order: newPage.page_order || 0,
+          };
           updatedPages.push(currentPage);
           currentPageIndex = updatedPages.length - 1;
         }
@@ -530,7 +538,11 @@ export default function ZineCanvas({
 
           if (!currentPage) {
             const newPage = await createPage(zine.id);
-            currentPage = { ...newPage, elements: [] };
+            currentPage = {
+              ...newPage,
+              elements: [],
+              page_order: newPage.page_order || 0,
+            };
             updatedPages.push(currentPage);
             currentPageIndex = updatedPages.length - 1;
           }
@@ -555,7 +567,11 @@ export default function ZineCanvas({
           // Move to next page for the next batch
           if (shuffledImages.length > 0) {
             const newPage = await createPage(zine.id);
-            updatedPages.push({ ...newPage, elements: [] });
+            updatedPages.push({
+              ...newPage,
+              elements: [],
+              page_order: newPage.page_order || 0,
+            });
             currentPageIndex = updatedPages.length - 1;
           }
         }
@@ -716,6 +732,19 @@ export default function ZineCanvas({
   const handlePastePage = useCallback(async () => {
     if (!copiedPage || !zine?.id) return;
 
+    // More thoroughly handle any active editors
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+
+    // Clear any selection to prevent editor-related errors
+    if (window.getSelection) {
+      window.getSelection()?.removeAllRanges();
+    }
+
+    // Add a small delay to ensure editor state is cleared
+    await new Promise((resolve) => setTimeout(resolve, 10));
+
     try {
       // Create a new page in the database
       const newPage = await createPage(zine.id);
@@ -754,9 +783,13 @@ export default function ZineCanvas({
       );
 
       // Update state with the new page and elements
-      const newPageWithElements = { ...newPage, elements: newElements };
+      const newPageWithElements = {
+        ...newPage,
+        elements: newElements,
+        page_order: newPage.page_order || 0, // Ensure page_order is a number
+      };
 
-      // Insert the new page after the current page
+      // Insert the new page after the current page in the UI
       const updatedPages = [
         ...pages.slice(0, currentPage + 1),
         newPageWithElements,
@@ -764,6 +797,33 @@ export default function ZineCanvas({
       ];
 
       setPages(updatedPages);
+
+      // Update page_order in database for all affected pages
+      const supabase = createClient();
+
+      // Get the current page's order
+      const currentPageOrder = pages[currentPage].page_order || currentPage;
+
+      // For all pages after the insertion point, increment their page_order
+      const pagesToUpdate = pages.slice(currentPage + 1).map((page, index) => ({
+        id: page.id,
+        page_order: currentPageOrder + 2 + index,
+        zine_id: zine.id,
+      }));
+
+      // Update the new page's order to be right after the current page
+      pagesToUpdate.unshift({
+        id: newPage.id,
+        page_order: currentPageOrder + 1,
+        zine_id: zine.id,
+      });
+
+      // Update all page orders in a single batch
+      if (pagesToUpdate.length > 0) {
+        await supabase
+          .from("pages")
+          .upsert(pagesToUpdate, { onConflict: "id" });
+      }
 
       // Set focus to the new page
       setCurrentPage(currentPage + 1);

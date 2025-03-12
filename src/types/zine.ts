@@ -9,6 +9,7 @@ export interface Page {
   created_at?: string;
   updated_at?: string;
   elements: Element[];
+  page_order: number;
 }
 
 export interface Element {
