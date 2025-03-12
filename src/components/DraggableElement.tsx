@@ -324,6 +324,17 @@ export function DraggableElement({
     };
   }, [editor]);
 
+  // Add memoization for the EditorContent
+  const EditorContentMemo = useCallback(() => {
+    if (!editor) return null;
+    return (
+      <>
+        <EditorContent editor={editor} />
+        {editor && <TextEditorBubbleMenu editor={editor} />}
+      </>
+    );
+  }, [editor, isEditing]);
+
   return (
     <Draggable
       nodeRef={nodeRef as RefObject<HTMLElement>}
@@ -350,8 +361,7 @@ export function DraggableElement({
             <div className="absolute -top-8 left-0 hidden gap-1 bg-white shadow-md rounded px-2 py-1 z-10"></div>
 
             <div className="min-w-[100px] p-2 relative text-[28px]">
-              <EditorContent editor={editor} />
-              {editor && <TextEditorBubbleMenu editor={editor} />}
+              {EditorContentMemo()}
               {isSelected && !isEditing && (
                 <>
                   <div
