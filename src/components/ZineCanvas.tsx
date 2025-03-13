@@ -760,13 +760,37 @@ export default function ZineCanvas({
   const handlePastePage = useCallback(async () => {
     if (!copiedPage || !zine?.id) return;
 
-    await cleanupActiveEditors();
-
     try {
+      // Ensure all editors are properly cleaned up
+      await cleanupActiveEditors();
+
+      // Add extra delay to ensure DOM is settled
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
       // Create a new page in the database
       const newPage = await createPage(zine.id);
 
-      // Create all elements from the copied page in the new page
+      // First, update the state with a new page that has no elements yet
+      // This ensures the DOM container for the page exists before elements are added
+      const emptyNewPage = {
+        ...newPage,
+        elements: [],
+        page_order: newPage.page_order || 0,
+      };
+
+      // Insert the empty page after the current page
+      const updatedPagesWithEmptyPage = [
+        ...pages.slice(0, currentPage + 1),
+        emptyNewPage,
+        ...pages.slice(currentPage + 1),
+      ];
+
+      setPages(updatedPagesWithEmptyPage);
+
+      // Wait for the new page to be rendered in the DOM
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      // Then create elements for the new page in the database
       const newElements = await Promise.all(
         copiedPage.elements.map(async (element) => {
           // Create a deep copy of the element for the new page
@@ -799,21 +823,19 @@ export default function ZineCanvas({
         })
       );
 
-      // Update state with the new page and elements
+      // Now update the page with the created elements
       const newPageWithElements = {
         ...newPage,
         elements: newElements,
-        page_order: newPage.page_order || 0, // Ensure page_order is a number
+        page_order: newPage.page_order || 0,
       };
 
-      // Insert the new page after the current page in the UI
-      const updatedPages = [
-        ...pages.slice(0, currentPage + 1),
-        newPageWithElements,
-        ...pages.slice(currentPage + 1),
-      ];
+      // Update state with the new page including elements
+      const finalUpdatedPages = updatedPagesWithEmptyPage.map((page) =>
+        page.id === newPage.id ? newPageWithElements : page
+      );
 
-      setPages(updatedPages);
+      setPages(finalUpdatedPages);
 
       // Update page_order in database for all affected pages
       const supabase = createClient();
@@ -842,7 +864,10 @@ export default function ZineCanvas({
           .upsert(pagesToUpdate, { onConflict: "id" });
       }
 
-      // Set focus to the new page (using our safe version)
+      // Wait for everything to settle before changing the current page
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // Set focus to the new page safely
       await cleanupActiveEditors();
       setCurrentPage(currentPage + 1);
     } catch (error) {
