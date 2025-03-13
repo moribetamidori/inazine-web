@@ -155,10 +155,38 @@ export default function ZineCanvas({
     await handleMoveLayer(id, direction, pages, currentPage, setPages);
   };
 
+  // Add this function to ensure editors are properly cleaned up
+  const cleanupActiveEditors = useCallback(() => {
+    // Blur any active element
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+
+    // Clear any text selection
+    if (window.getSelection) {
+      window.getSelection()?.removeAllRanges();
+    }
+
+    // Force a small delay to ensure editor state is updated
+    return new Promise((resolve) => setTimeout(resolve, 50));
+  }, []);
+
+  // Update the setCurrentPage function to clean up editors first
+  const safeSetCurrentPage = useCallback(
+    async (pageIndex: number) => {
+      await cleanupActiveEditors();
+      setCurrentPage(pageIndex);
+    },
+    [cleanupActiveEditors]
+  );
+
   const generatePreview = async () => {
     setIsLoadingPreview(true);
 
     try {
+      // First clean up any active editors
+      await cleanupActiveEditors();
+
       // Load all page elements when preview is requested
       const loadAllPageElements = async () => {
         const loadPromises = pages.map((page) =>
@@ -728,22 +756,11 @@ export default function ZineCanvas({
     setCopiedPage(pages[currentPage]);
   }, [pages, currentPage]);
 
-  // Function to paste the copied page
+  // Replace the existing handlePastePage with this improved version
   const handlePastePage = useCallback(async () => {
     if (!copiedPage || !zine?.id) return;
 
-    // More thoroughly handle any active editors
-    if (document.activeElement instanceof HTMLElement) {
-      document.activeElement.blur();
-    }
-
-    // Clear any selection to prevent editor-related errors
-    if (window.getSelection) {
-      window.getSelection()?.removeAllRanges();
-    }
-
-    // Add a small delay to ensure editor state is cleared
-    await new Promise((resolve) => setTimeout(resolve, 10));
+    await cleanupActiveEditors();
 
     try {
       // Create a new page in the database
@@ -825,12 +842,13 @@ export default function ZineCanvas({
           .upsert(pagesToUpdate, { onConflict: "id" });
       }
 
-      // Set focus to the new page
+      // Set focus to the new page (using our safe version)
+      await cleanupActiveEditors();
       setCurrentPage(currentPage + 1);
     } catch (error) {
       console.error("Error pasting page:", error);
     }
-  }, [copiedPage, pages, currentPage, zine?.id]);
+  }, [copiedPage, pages, currentPage, zine?.id, cleanupActiveEditors]);
 
   // Add keyboard event listener for page copy/paste
   useEffect(() => {
@@ -877,7 +895,7 @@ export default function ZineCanvas({
         <Thumbnail
           pages={pages}
           currentPage={currentPage}
-          setCurrentPage={setCurrentPage}
+          setCurrentPage={safeSetCurrentPage}
           addNewPage={addNewPage}
           setPages={setPages}
         />
