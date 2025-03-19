@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { getPagesByZineId } from "@/lib/page";
+import { getElementsByZineId } from "@/lib/page";
 import type { Page } from "@/types/zine";
 
 export function useZinePages(zineId: string | undefined) {
@@ -10,7 +10,7 @@ export function useZinePages(zineId: string | undefined) {
 
     const fetchPages = async () => {
       try {
-        const fetchedPages = await getPagesByZineId(zineId);
+        const fetchedPages = await getElementsByZineId(zineId);
         setPages(
           fetchedPages.map((page) => ({
             ...page,

@@ -42,6 +42,19 @@ export async function getPagesByZineId(zineId: string) {
   if (error) throw error;
   return pages;
 }
+export async function getElementsByZineId(zineId: string) {
+  const supabase = createClient();
+
+  const { data: pages, error } = await supabase
+    .from("pages")
+    .select("*, elements(*)")
+    .eq("zine_id", zineId)
+    .order("page_order", { ascending: true });
+
+  if (error) throw error;
+  return pages;
+}
+
 
 export async function getPreviewsByZineId(zineId: string) {
   const supabase = createClient();
