@@ -35,7 +35,7 @@ export async function getPagesByZineId(zineId: string) {
 
   const { data: pages, error } = await supabase
     .from("pages")
-    .select("*, elements(*), preview")
+    .select("*, preview")
     .eq("zine_id", zineId)
     .order("page_order", { ascending: true });
 
