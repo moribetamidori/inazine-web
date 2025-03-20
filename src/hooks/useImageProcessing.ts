@@ -1,14 +1,12 @@
 import { useState } from "react";
 import { Page } from "@/types/zine";
 import { createElement } from "@/lib/element";
-import { createPage } from "@/lib/page";
 import { createLayoutForImages } from "@/lib/layout";
 import { removeBackground } from "@imgly/background-removal";
 
 interface UseImageProcessingProps {
-  pages: Page[];
-  setPages: (pages: Page[]) => void;
-  currentPage: number;
+  currentPageData: Page | null;
+  setCurrentPageData: (page: Page) => void;
   zineId?: string;
   selectedImageId: string | null;
   width: number;
@@ -17,9 +15,8 @@ interface UseImageProcessingProps {
 }
 
 export function useImageProcessing({
-  pages,
-  setPages,
-  currentPage,
+  currentPageData,
+  setCurrentPageData,
   zineId,
   selectedImageId,
   width,
@@ -30,8 +27,7 @@ export function useImageProcessing({
   const [isRemovingBackground, setIsRemovingBackground] = useState(false);
 
   const handleAutoLayoutImages = async (files: File[]) => {
-    const testCount = null;
-    if (!zineId || files.length === 0) return;
+    if (!zineId || !currentPageData?.id || files.length === 0) return;
 
     setIsProcessingAutoLayout(true);
 
@@ -97,130 +93,24 @@ export function useImageProcessing({
         })
       );
 
-      // If testCount is provided, only use that many images
-      const imagesToUse = testCount
-        ? processedImages.slice(0, testCount)
-        : processedImages;
-
       // Shuffle the images for randomness
-      const shuffledImages = [...imagesToUse].sort(() => Math.random() - 0.5);
+      const shuffledImages = [...processedImages].sort(
+        () => Math.random() - 0.5
+      );
 
-      // Create a copy of the current pages
-      let updatedPages = [...pages];
-      let currentPageIndex = pages.length - 1;
+      // Create a layout for these images on the current page
+      const elements = await createLayoutForImages(
+        shuffledImages,
+        currentPageData.id,
+        width,
+        height
+      );
 
-      // If the current page already has elements, create a new page
-      if (pages[currentPageIndex]?.elements.length > 0) {
-        const newPage = await createPage(zineId);
-        updatedPages = [
-          ...updatedPages,
-          { ...newPage, elements: [], page_order: newPage.page_order || 0 },
-        ];
-        currentPageIndex = updatedPages.length - 1;
-      }
-
-      // If testCount is provided, use all images on one page
-      if (testCount) {
-        // Get the current page
-        let currentPage = updatedPages[currentPageIndex];
-
-        if (!currentPage) {
-          const newPage = await createPage(zineId);
-          currentPage = {
-            ...newPage,
-            elements: [],
-            page_order: newPage.page_order || 0,
-          };
-          updatedPages.push(currentPage);
-          currentPageIndex = updatedPages.length - 1;
-        }
-
-        // Create a layout for these images
-        const elements = await createLayoutForImages(
-          shuffledImages,
-          currentPage.id,
-          width,
-          height
-        );
-
-        // Add elements to the current page
-        updatedPages[currentPageIndex] = {
-          ...currentPage,
-          elements: [...currentPage.elements, ...elements],
-        };
-      } else {
-        // Original logic for distributing across multiple pages
-        while (shuffledImages.length > 0) {
-          // Biased random distribution favoring 1-2 images
-          let imagesPerPage;
-          const rand = Math.random();
-
-          if (rand < 0.8) {
-            // 50% chance for 1-2 images
-            imagesPerPage = Math.random() < 0.35 ? 1 : 2;
-          } else if (rand < 0.85) {
-            // 20% chance for 3-4 images
-            imagesPerPage = Math.random() < 0.3 ? 3 : 4;
-          } else if (rand < 0.9) {
-            // 15% chance for 5-6 images
-            imagesPerPage = Math.random() < 0.2 ? 5 : 6;
-          } else if (rand < 0.95) {
-            // 10% chance for exactly 7 images (the bump)
-            imagesPerPage = 7;
-          } else {
-            // 5% chance for 8-9 images
-            imagesPerPage = Math.random() < 0.2 ? 8 : 9;
-          }
-
-          // Ensure we don't try to use more images than we have
-          imagesPerPage = Math.min(imagesPerPage, shuffledImages.length);
-
-          // Get the current page or create a new one if needed
-          let currentPage = updatedPages[currentPageIndex];
-
-          if (!currentPage) {
-            const newPage = await createPage(zineId);
-            currentPage = {
-              ...newPage,
-              elements: [],
-              page_order: newPage.page_order || 0,
-            };
-            updatedPages.push(currentPage);
-            currentPageIndex = updatedPages.length - 1;
-          }
-
-          // Take a batch of images
-          const imageBatch = shuffledImages.splice(0, imagesPerPage);
-
-          // Create a layout for these images
-          const elements = await createLayoutForImages(
-            imageBatch,
-            currentPage.id,
-            width,
-            height
-          );
-
-          // Add elements to the current page
-          updatedPages[currentPageIndex] = {
-            ...currentPage,
-            elements: [...currentPage.elements, ...elements],
-          };
-
-          // Move to next page for the next batch
-          if (shuffledImages.length > 0) {
-            const newPage = await createPage(zineId);
-            updatedPages.push({
-              ...newPage,
-              elements: [],
-              page_order: newPage.page_order || 0,
-            });
-            currentPageIndex = updatedPages.length - 1;
-          }
-        }
-      }
-
-      // Update pages state
-      setPages(updatedPages);
+      // Add elements to the current page
+      setCurrentPageData({
+        ...currentPageData,
+        elements: [...currentPageData.elements, ...elements],
+      });
     } catch (error) {
       console.error("Error in auto layout:", error);
     } finally {
@@ -230,10 +120,10 @@ export function useImageProcessing({
 
   // Add background removal function
   const handleRemoveBackground = async () => {
-    if (!selectedImageId) return;
+    if (!selectedImageId || !currentPageData) return;
 
     // Find the selected element
-    const selectedElement = pages[currentPage]?.elements.find(
+    const selectedElement = currentPageData.elements.find(
       (el) => el.id === selectedImageId && el.type === "image"
     );
 
@@ -268,7 +158,7 @@ export function useImageProcessing({
   };
 
   const addSticker = async (stickerUrl: string) => {
-    if (!pages[currentPage]?.id) return;
+    if (!currentPageData?.id) return;
 
     try {
       const img = new Image();
@@ -280,7 +170,7 @@ export function useImageProcessing({
         const defaultHeight = defaultWidth / aspectRatio; // Calculate height based on aspect ratio
 
         const element = await createElement({
-          page_id: pages[currentPage].id,
+          page_id: currentPageData.id,
           type: "image",
           content: stickerUrl,
           position_x: width / 2 - defaultWidth / 2, // Center the sticker
@@ -288,7 +178,7 @@ export function useImageProcessing({
           width: defaultWidth,
           height: defaultHeight,
           scale: 1,
-          z_index: pages[currentPage].elements.length + 1,
+          z_index: currentPageData.elements.length + 1,
           filter: "none",
           crop: null,
         });
@@ -305,13 +195,10 @@ export function useImageProcessing({
           } | null,
         };
 
-        setPages(
-          pages.map((page, index) =>
-            index === currentPage
-              ? { ...page, elements: [...page.elements, typedElement] }
-              : page
-          )
-        );
+        setCurrentPageData({
+          ...currentPageData,
+          elements: [...currentPageData.elements, typedElement],
+        });
       };
     } catch (error) {
       console.error("Error adding sticker:", error);

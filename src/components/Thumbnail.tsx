@@ -15,16 +15,15 @@ import {
 } from "@dnd-kit/sortable";
 import { useSortable } from "@dnd-kit/sortable";
 import { createClient } from "@/lib/supabase/client";
-import { Page } from "@/types/zine";
 import React, { useEffect } from "react";
 import { deletePage } from "@/lib/page";
 
 interface ThumbnailProps {
-  pages: Page[];
+  pages: { id: string; page_order: number }[];
   currentPage: number;
   setCurrentPage: (page: number) => void;
   addNewPage: () => void;
-  setPages: (pages: Page[]) => void;
+  setPages: (pages: { id: string; page_order: number }[]) => void;
 }
 
 interface SortablePageProps {

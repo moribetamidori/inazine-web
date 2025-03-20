@@ -1,7 +1,6 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import type { Zine } from "@/types/zine";
-import ZinePreview from "./ZinePreview";
-import { useZinePages } from "@/hooks/useZinePages";
+import { useSinglePage } from "@/hooks/useSinglePage";
 import { usePageManagement } from "@/hooks/usePageManagement";
 import { useElementManagement } from "@/hooks/useElementManagement";
 import { useZoomControl } from "@/hooks/useZoomControl";
@@ -10,8 +9,9 @@ import { useCopyPaste } from "@/hooks/useCopyPaste";
 import { useImageProcessing } from "@/hooks/useImageProcessing";
 import { CanvasContainer } from "@/components/canvas/CanvasContainer";
 import { PageRenderer } from "@/components/canvas/PageRenderer";
-import { VerticalToolbar } from "@/components/VerticalToolbar";
 import Thumbnail from "@/components/Thumbnail";
+import { fetchPageThumbnails } from "@/lib/page";
+import { PreviewManager } from "@/components/PreviewManager";
 
 interface ZineCanvasProps {
   width?: number;
@@ -24,10 +24,42 @@ export default function ZineCanvas({
   height = 1200,
   zine,
 }: ZineCanvasProps) {
-  const { pages, setPages } = useZinePages(zine?.id);
-  const [currentPage, setCurrentPage] = useState(0);
+  // State for page management
+  const [currentPageIndex, setCurrentPageIndex] = useState(0);
+  const [thumbnailPages, setThumbnailPages] = useState<
+    Array<{ id: string; page_order: number }>
+  >([]);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-  const [previewPages, setPreviewPages] = useState<string[]>([]);
+
+  // Use useSinglePage for the active editing page
+  const {
+    page: currentPage,
+    setPage: setCurrentPage,
+    loading: pageLoading,
+  } = useSinglePage(zine?.id, currentPageIndex);
+
+  // Only fetch thumbnails information, not full page content
+  useEffect(() => {
+    if (!zine?.id) return;
+
+    const fetchThumbnails = async () => {
+      try {
+        // This would be a lightweight API call that only returns page IDs and order
+        const thumbnails = await fetchPageThumbnails(zine.id);
+        setThumbnailPages(
+          thumbnails.map((page) => ({
+            id: page.id,
+            page_order: page.page_order ?? 0,
+          }))
+        );
+      } catch (err) {
+        console.error("Error fetching page thumbnails:", err);
+      }
+    };
+
+    fetchThumbnails();
+  }, [zine?.id]);
+
   const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const pageRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -39,22 +71,18 @@ export default function ZineCanvas({
     addNewPage,
     safeSetCurrentPage,
     cleanupActiveEditors,
-    generatePreview,
-    isLoadingPreview,
     privacy,
     togglePrivacy,
     isLoadingPrivacy,
   } = usePageManagement({
     zine,
-    pages,
-    setPages,
-    currentPage,
-    setCurrentPage,
+    currentPage: currentPageIndex,
+    setCurrentPage: setCurrentPageIndex,
+    thumbnailPages,
+    setThumbnailPages,
     pageRefs,
     width,
     height,
-    setPreviewPages,
-    setIsPreviewOpen,
     cleanupEditors: true,
   });
 
@@ -72,36 +100,28 @@ export default function ZineCanvas({
     setCurrentFilter,
     handleFilterChange,
   } = useElementManagement({
-    pages,
-    setPages,
-    currentPage,
+    currentPageData: currentPage,
+    setCurrentPageData: setCurrentPage,
     width,
     height,
   });
 
-  const {
-    handleCopy,
-    handlePaste,
-  } = useCopyPaste({
-    pages,
-    setPages,
-    currentPage,
+  const { handleCopy, handlePaste } = useCopyPaste({
+    currentPageData: currentPage,
+    setCurrentPageData: setCurrentPage,
     zineId: zine?.id,
     width,
     height,
     cleanupActiveEditors,
   });
 
-  const {
-    currentBackgroundColor,
-    handleSetBackgroundColor,
-  } = useBackgroundControl({
-    pages,
-    setPages,
-    currentPage,
-    width,
-    height,
-  });
+  const { currentBackgroundColor, handleSetBackgroundColor } =
+    useBackgroundControl({
+      currentPageData: currentPage,
+      setCurrentPageData: setCurrentPage,
+      width,
+      height,
+    });
 
   const {
     isProcessingAutoLayout,
@@ -110,9 +130,8 @@ export default function ZineCanvas({
     handleRemoveBackground,
     addSticker,
   } = useImageProcessing({
-    pages,
-    setPages,
-    currentPage,
+    currentPageData: currentPage,
+    setCurrentPageData: setCurrentPage,
     zineId: zine?.id,
     selectedImageId,
     width,
@@ -129,9 +148,7 @@ export default function ZineCanvas({
 
   const handleImageSelect = (elementId: string) => {
     setSelectedImageId(elementId);
-    const element = pages[currentPage]?.elements.find(
-      (el) => el.id === elementId
-    );
+    const element = currentPage?.elements.find((el) => el.id === elementId);
     if (element?.type === "image") {
       setCurrentFilter(element.filter || "none");
     }
@@ -140,13 +157,13 @@ export default function ZineCanvas({
   return (
     <div className="relative rounded-lg h-screen">
       <div className="flex h-[90vh]">
-        {/* Left sidebar with page thumbnails */}
+        {/* Left sidebar with page thumbnails - now using lightweight thumbnailPages */}
         <Thumbnail
-          pages={pages}
-          currentPage={currentPage}
+          pages={thumbnailPages}
+          currentPage={currentPageIndex}
           setCurrentPage={safeSetCurrentPage}
           addNewPage={addNewPage}
-          setPages={setPages}
+          setPages={setThumbnailPages}
         />
 
         {/* Main canvas area */}
@@ -156,41 +173,45 @@ export default function ZineCanvas({
             handleWheel={handleWheel}
             handleCanvasClick={handleCanvasClick}
           >
-            <PageRenderer
-              pages={pages}
-              currentPage={currentPage}
-              scale={scale}
-              width={width}
-              height={height}
-              pageRefs={pageRefs}
-              handleElementDragStop={handleElementDragStop}
-              handleUpdateContent={handleUpdateContent}
-              handleElementResize={handleElementResize}
-              handleElementMoveLayer={handleElementMoveLayer}
-              handleUpdateFilter={handleUpdateFilter}
-              handleUpdateCrop={handleUpdateCrop}
-              handleDeleteElement={handleDeleteElement}
-              handleCopy={handleCopy}
-              handlePaste={handlePaste}
-              selectedImageId={selectedImageId}
-              handleImageSelect={handleImageSelect}
-            />
+            {pageLoading ? (
+              <div className="flex items-center justify-center h-full">
+                <p>Loading page...</p>
+              </div>
+            ) : (
+              <PageRenderer
+                currentPageData={currentPage}
+                scale={scale}
+                width={width}
+                height={height}
+                pageRefs={pageRefs}
+                handleElementDragStop={handleElementDragStop}
+                handleUpdateContent={handleUpdateContent}
+                handleElementResize={handleElementResize}
+                handleElementMoveLayer={handleElementMoveLayer}
+                handleUpdateFilter={handleUpdateFilter}
+                handleUpdateCrop={handleUpdateCrop}
+                handleDeleteElement={handleDeleteElement}
+                handleCopy={handleCopy}
+                handlePaste={handlePaste}
+                selectedImageId={selectedImageId}
+                handleImageSelect={handleImageSelect}
+              />
+            )}
           </CanvasContainer>
 
-          {/* Tools sidebar */}
-          <VerticalToolbar
+          {/* Replace VerticalToolbar with PreviewManager */}
+          <PreviewManager
+            elementId={selectedImageId ?? ""}
             currentFilter={currentFilter}
             onFilterChange={handleFilterChange}
             disabled={
               !selectedImageId ||
-              !pages[currentPage]?.elements.find(
+              !currentPage?.elements.find(
                 (el) => el.id === selectedImageId && el.type === "image"
               )
             }
             addText={addText}
             addImage={addImage}
-            generatePreview={generatePreview}
-            isLoadingPreview={isLoadingPreview}
             scale={scale}
             setScale={setScale}
             addSticker={addSticker}
@@ -204,20 +225,16 @@ export default function ZineCanvas({
             removeImageBackground={handleRemoveBackground}
             isRemovingBackground={isRemovingBackground}
             hasSelectedImage={
-              !!pages[currentPage]?.elements.find(
+              !!currentPage?.elements.find(
                 (el) => el.id === selectedImageId && el.type === "image"
               )
             }
+            zineId={zine?.id ?? ""}
+            isPreviewOpen={isPreviewOpen}
+            setIsPreviewOpen={setIsPreviewOpen}
           />
         </div>
       </div>
-
-      {isPreviewOpen && (
-        <ZinePreview
-          pages={previewPages}
-          onClose={() => setIsPreviewOpen(false)}
-        />
-      )}
     </div>
   );
 }

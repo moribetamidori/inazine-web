@@ -55,7 +55,6 @@ export async function getElementsByZineId(zineId: string) {
   return pages;
 }
 
-
 export async function getPreviewsByZineId(zineId: string) {
   const supabase = createClient();
 
@@ -117,4 +116,59 @@ export async function getCoverByZineId(zineId: string) {
 
   if (error) throw error;
   return coverPage?.preview || null;
+}
+
+export async function getPageWithElements(zineId: string, pageIndex: number) {
+  const supabase = createClient();
+
+  // First, get all pages to find the right one by index
+  const { data: pages, error: pagesError } = await supabase
+    .from("pages")
+    .select("id")
+    .eq("zine_id", zineId)
+    .order("page_order", { ascending: true });
+
+  if (pagesError) throw pagesError;
+
+  // If pageIndex is out of bounds, return null
+  if (!pages || pageIndex < 0 || pageIndex >= pages.length) {
+    return null;
+  }
+
+  // Now fetch the specific page with all its elements
+  const pageId = pages[pageIndex].id;
+  const { data: page, error: pageError } = await supabase
+    .from("pages")
+    .select("*, elements(*)")
+    .eq("id", pageId)
+    .single();
+
+  if (pageError) throw pageError;
+  return page;
+}
+
+export async function fetchPageThumbnails(zineId: string) {
+  const supabase = createClient();
+
+  const { data: thumbnailPages, error } = await supabase
+    .from("pages")
+    .select("id, page_order")
+    .eq("zine_id", zineId)
+    .order("page_order", { ascending: true });
+
+  if (error) throw error;
+  return thumbnailPages || [];
+}
+
+export async function fetchAllPages(zineId: string) {
+  const supabase = createClient();
+
+  const { data: pages, error } = await supabase
+    .from("pages")
+    .select("*")
+    .eq("zine_id", zineId)
+    .order("page_order", { ascending: true });
+
+  if (error) throw error;
+  return pages || [];
 }

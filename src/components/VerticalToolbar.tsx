@@ -9,12 +9,12 @@ import { useState } from "react";
 import { ImageDropZone } from "./ImageDropZone";
 
 interface VerticalToolbarProps {
+  elementId: string;
   currentFilter: string;
-  onFilterChange: (filter: string) => void;
+  onFilterChange: (id: string, filter: string) => void;
   disabled: boolean;
   addText: () => void;
   addImage: () => void;
-  generatePreview: () => void;
   isLoadingPreview: boolean;
   scale: number;
   setScale: (scale: number) => void;
@@ -29,6 +29,8 @@ interface VerticalToolbarProps {
   removeImageBackground?: () => Promise<void>;
   isRemovingBackground?: boolean;
   hasSelectedImage?: boolean;
+  zineId: string;
+  generatePreview: () => void;
 }
 
 interface StickerCollection {
@@ -102,12 +104,12 @@ const STICKER_COLLECTIONS: StickerCollection[] = [
 ];
 
 export function VerticalToolbar({
+  elementId,
   currentFilter,
   onFilterChange,
   disabled,
   addText,
   addImage,
-  generatePreview,
   isLoadingPreview,
   scale,
   setScale,
@@ -122,6 +124,7 @@ export function VerticalToolbar({
   removeImageBackground,
   isRemovingBackground = false,
   hasSelectedImage = false,
+  generatePreview,
 }: VerticalToolbarProps) {
   const [isAddingSticker, setIsAddingSticker] = useState(false);
   const [expandedCollection, setExpandedCollection] = useState<string | null>(
@@ -257,7 +260,7 @@ export function VerticalToolbar({
               {FILTERS.map((filter) => (
                 <button
                   key={filter.name}
-                  onClick={() => onFilterChange(filter.name)}
+                  onClick={() => onFilterChange(elementId, filter.name)}
                   disabled={disabled}
                   className={`w-full px-3 py-2 text-left text-sm rounded-md transition-colors ${
                     currentFilter === filter.name

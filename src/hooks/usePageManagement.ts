@@ -1,40 +1,36 @@
 import { useState, useCallback, MutableRefObject } from "react";
-import { Page, Zine } from "@/types/zine";
+import {  Zine } from "@/types/zine";
 import { createPage } from "@/lib/page";
 import { generatePreview as generateZinePreview, updateZine } from "@/lib/zine";
 
 interface UsePageManagementProps {
   zine?: Zine;
-  pages: Page[];
-  setPages: (pages: Page[]) => void;
   currentPage: number;
   setCurrentPage: (page: number) => void;
+  thumbnailPages: Array<{ id: string; page_order: number }>;
+  setThumbnailPages: (pages: Array<{ id: string; page_order: number }>) => void;
   pageRefs: MutableRefObject<(HTMLDivElement | null)[]>;
   width: number;
   height: number;
-  setPreviewPages: (pages: string[]) => void;
-  setIsPreviewOpen: (isOpen: boolean) => void;
   cleanupEditors?: boolean;
 }
 
 export function usePageManagement({
   zine,
-  pages,
-  setPages,
-  currentPage,
-  setCurrentPage,
+  currentPage: currentPageIndex,
+  setCurrentPage: setCurrentPageIndex,
+  thumbnailPages,
+  setThumbnailPages,
   pageRefs,
   width,
   height,
-  setPreviewPages,
-  setIsPreviewOpen,
   cleanupEditors = true,
 }: UsePageManagementProps) {
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
   const [privacy, setPrivacy] = useState(zine?.privacy || "closed");
   const [isLoadingPrivacy, setIsLoadingPrivacy] = useState(false);
 
-  // Add this function to toggle privacy
+  // Function to toggle privacy
   const togglePrivacy = async () => {
     if (!zine?.id) return;
 
@@ -50,7 +46,7 @@ export function usePageManagement({
     }
   };
 
-  // Add this function to ensure editors are properly cleaned up
+  // Function to ensure editors are properly cleaned up
   const cleanupActiveEditors = useCallback(() => {
     if (!cleanupEditors) return Promise.resolve<void>(undefined);
 
@@ -72,101 +68,81 @@ export function usePageManagement({
   const safeSetCurrentPage = useCallback(
     async (pageIndex: number) => {
       await cleanupActiveEditors();
-      setCurrentPage(pageIndex);
+      setCurrentPageIndex(pageIndex);
     },
-    [cleanupActiveEditors, setCurrentPage]
+    [cleanupActiveEditors, setCurrentPageIndex]
   );
 
+  // Function to add a new page
   const addNewPage = async () => {
     if (!zine?.id) return;
 
     try {
       const newPage = await createPage(zine.id);
-      const newPageWithElements = { ...newPage, elements: [] };
 
-      // Update the pages state
-      const updatedPages = [...pages, newPageWithElements];
-      setPages(updatedPages as Page[]);
+      // Update thumbnails with the new page
+      const newThumbnail = {
+        id: newPage.id,
+        page_order: thumbnailPages.length,
+      };
 
-      // Set to the correct index (length of updated array - 1)
-      setCurrentPage(updatedPages.length - 1);
+      setThumbnailPages([...thumbnailPages, newThumbnail]);
+
+      // Navigate to the new page
+      setCurrentPageIndex(thumbnailPages.length);
     } catch (error) {
       console.error("Error creating new page:", error);
     }
   };
 
+  // Function to generate preview
   const generatePreview = async () => {
+    if (!zine?.id) return;
+
     setIsLoadingPreview(true);
 
     try {
       // First clean up any active editors
       await cleanupActiveEditors();
 
-      // Load all page elements when preview is requested
-      const loadAllPageElements = async () => {
-        const loadPromises = pages.map((page) =>
-          Promise.all(
-            page.elements
-              .filter((el) => el.type === "image")
-              .map(
-                (el) =>
-                  new Promise((resolve, reject) => {
-                    const img = new Image();
-                    img.onload = () => resolve(true);
-                    img.onerror = () => reject();
-                    img.src = el.content;
-                  })
-              )
-          )
+      // Store current page index
+      const previousPageIndex = currentPageIndex;
+
+      // Temporarily show the current page (remove hidden class)
+      if (pageRefs.current[0]) {
+        const wasHidden = pageRefs.current[0].classList.contains("hidden");
+        pageRefs.current[0].classList.remove("hidden");
+
+        // Wait for render
+        await new Promise((resolve) => setTimeout(resolve, 100));
+
+        // Generate preview for the current page
+        const filteredRefs = pageRefs.current.filter(
+          (ref): ref is HTMLDivElement => ref !== null
         );
 
-        await Promise.all(loadPromises);
-      };
+        const images = await generateZinePreview(
+          filteredRefs,
+          width,
+          height,
+          zine.id
+        );
 
-      await loadAllPageElements();
-
-      // Store current page
-      const previousPage = currentPage;
-
-      // Temporarily show all pages
-      const currentHiddenPages = pageRefs.current.map((ref) => {
-        if (ref) {
-          const wasHidden = ref.classList.contains("hidden");
-          ref.classList.remove("hidden");
-          return wasHidden;
+        // Restore hidden state if needed
+        if (wasHidden) {
+          pageRefs.current[0].classList.add("hidden");
         }
-        return false;
-      });
 
-      // Temporarily render all pages
-      setCurrentPage(-1);
+        // Return to the previous page index
+        setCurrentPageIndex(previousPageIndex);
 
-      // Wait for render
-      await new Promise((resolve) => setTimeout(resolve, 100));
+        return images;
+      }
 
-      const filteredRefs = pageRefs.current.filter(
-        (ref): ref is HTMLDivElement => ref !== null
-      );
-
-      const images = await generateZinePreview(
-        filteredRefs,
-        width,
-        height,
-        zine?.id ?? ""
-      );
-
-      // Restore hidden state and current page
-      pageRefs.current.forEach((ref, index) => {
-        if (ref && currentHiddenPages[index]) {
-          ref.classList.add("hidden");
-        }
-      });
-      setCurrentPage(previousPage);
-
-      setPreviewPages(images);
-      setIsPreviewOpen(true);
+      return [];
     } catch (error) {
       console.error("Error generating preview:", error);
+      return [];
     } finally {
       setIsLoadingPreview(false);
     }

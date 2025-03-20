@@ -390,7 +390,6 @@ export function DraggableElement({
           </div>
         ) : (
           <div className="relative group">
-            <div className="absolute -top-8 left-0 hidden gap-1 bg-white shadow-md rounded px-2 py-1 z-10"></div>
             {imageDimensions.width > 0 && (
               <>
                 <div

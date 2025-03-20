@@ -3,17 +3,15 @@ import { Page } from "@/types/zine";
 import { createElement } from "@/lib/element";
 
 interface UseBackgroundControlProps {
-  pages: Page[];
-  setPages: (pages: Page[]) => void;
-  currentPage: number;
+  currentPageData: Page | null;
+  setCurrentPageData: (page: Page) => void;
   width: number;
   height: number;
 }
 
 export function useBackgroundControl({
-  pages,
-  setPages,
-  currentPage,
+  currentPageData,
+  setCurrentPageData,
   width,
   height,
 }: UseBackgroundControlProps) {
@@ -22,10 +20,10 @@ export function useBackgroundControl({
 
   const setBackgroundColor = useCallback(
     async (color: string) => {
-      if (!pages[currentPage]?.id) return;
+      if (!currentPageData?.id) return;
 
       // Check if there's already a background element (assumed to be at z-index 0)
-      const existingBackgroundIndex = pages[currentPage]?.elements.findIndex(
+      const existingBackgroundIndex = currentPageData.elements.findIndex(
         (el) => el.z_index === 0 && el.type === "image"
       );
 
@@ -42,22 +40,21 @@ export function useBackgroundControl({
 
       if (existingBackgroundIndex >= 0) {
         // Update existing background
-        const updatedPages = [...pages];
-        const updatedElements = [...updatedPages[currentPage].elements];
+        const updatedElements = [...currentPageData.elements];
         updatedElements[existingBackgroundIndex] = {
           ...updatedElements[existingBackgroundIndex],
           content: dataUrl,
         };
-        updatedPages[currentPage] = {
-          ...updatedPages[currentPage],
+
+        setCurrentPageData({
+          ...currentPageData,
           elements: updatedElements,
-        };
-        setPages(updatedPages);
+        });
       } else {
         // Create new background element
         try {
           const newElement = await createElement({
-            page_id: pages[currentPage].id,
+            page_id: currentPageData.id,
             type: "image",
             content: dataUrl,
             position_x: 0,
@@ -70,33 +67,27 @@ export function useBackgroundControl({
             crop: null,
           });
 
-          setPages(
-            pages.map((page, index) =>
-              index === currentPage
-                ? {
-                    ...page,
-                    elements: [
-                      {
-                        ...newElement,
-                        type: newElement.type as "text" | "image",
-                        filter: "none",
-                        crop: null,
-                      },
-                      ...page.elements.map((el) => ({
-                        ...el,
-                        z_index: el.z_index + 1, // Increment z-index of all other elements
-                      })),
-                    ],
-                  }
-                : page
-            )
-          );
+          setCurrentPageData({
+            ...currentPageData,
+            elements: [
+              {
+                ...newElement,
+                type: newElement.type as "text" | "image",
+                filter: "none",
+                crop: null,
+              },
+              ...currentPageData.elements.map((el) => ({
+                ...el,
+                z_index: el.z_index + 1, // Increment z-index of all other elements
+              })),
+            ],
+          });
         } catch (error) {
           console.error("Error adding background element:", error);
         }
       }
     },
-    [pages, currentPage, width, height, setPages]
+    [currentPageData, width, height, setCurrentPageData]
   );
 
   const handleSetBackgroundColor = (color: string) => {

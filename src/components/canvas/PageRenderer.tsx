@@ -3,8 +3,7 @@ import { Page, Element } from "@/types/zine";
 import { DraggableElement } from "../DraggableElement";
 
 interface PageRendererProps {
-  pages: Page[];
-  currentPage: number;
+  currentPageData: Page | null;
   scale: number;
   width: number;
   height: number;
@@ -35,8 +34,7 @@ interface PageRendererProps {
 }
 
 export function PageRenderer({
-  pages,
-  currentPage,
+  currentPageData,
   scale,
   width,
   height,
@@ -53,56 +51,55 @@ export function PageRenderer({
   selectedImageId,
   handleImageSelect,
 }: PageRendererProps) {
+  if (!currentPageData) {
+    return (
+      <div className="min-h-full min-w-full flex flex-col items-center justify-center p-8">
+        <p>No page data available</p>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-full min-w-full flex flex-col items-center justify-center p-8 gap-8">
-      {pages.map((page, pageIndex) => (
-        <div
-          key={page.id}
-          ref={(el) => {
-            pageRefs.current[pageIndex] = el;
-          }}
-          className={`bg-white shadow-lg transition-all ${
-            pageIndex !== currentPage ? "hidden" : ""
-          }`}
-          style={{
-            width,
-            height,
-            transform: `scale(${scale})`,
-            transformOrigin: "top",
-            margin: `0px ${Math.max(((scale - 1) * width) / 2, 0)}px`,
-            position: "relative",
-          }}
-        >
-          {/* Only render elements for the current page or during preview generation */}
-          {(pageIndex === currentPage || currentPage === -1) &&
-            page.elements
-              .sort((a, b) => a.z_index - b.z_index)
-              .map((element, index) => (
-                <DraggableElement
-                  key={element.id}
-                  element={element}
-                  scale={scale}
-                  onDelete={() => handleDeleteElement(element.id)}
-                  onDragStop={handleElementDragStop}
-                  onUpdateContent={handleUpdateContent}
-                  onResize={handleElementResize}
-                  onMoveLayer={handleElementMoveLayer}
-                  isTopLayer={
-                    index === (pages[currentPage]?.elements?.length ?? 0) - 1
-                  }
-                  isBottomLayer={index === 0}
-                  canvasWidth={width}
-                  canvasHeight={height}
-                  onUpdateFilter={handleUpdateFilter}
-                  onCopy={() => handleCopy(element)}
-                  isSelected={element.id === selectedImageId}
-                  onSelect={() => handleImageSelect(element.id)}
-                  handlePaste={handlePaste}
-                  onUpdateCrop={handleUpdateCrop}
-                />
-              ))}
-        </div>
-      ))}
+      <div
+        ref={(el) => {
+          pageRefs.current[0] = el;
+        }}
+        className="bg-white shadow-lg transition-all"
+        style={{
+          width,
+          height,
+          transform: `scale(${scale})`,
+          transformOrigin: "top",
+          margin: `0px ${Math.max(((scale - 1) * width) / 2, 0)}px`,
+          position: "relative",
+        }}
+      >
+        {currentPageData.elements
+          .sort((a, b) => a.z_index - b.z_index)
+          .map((element, index) => (
+            <DraggableElement
+              key={element.id}
+              element={element}
+              scale={scale}
+              onDelete={() => handleDeleteElement(element.id)}
+              onDragStop={handleElementDragStop}
+              onUpdateContent={handleUpdateContent}
+              onResize={handleElementResize}
+              onMoveLayer={handleElementMoveLayer}
+              isTopLayer={index === currentPageData.elements.length - 1}
+              isBottomLayer={index === 0}
+              canvasWidth={width}
+              canvasHeight={height}
+              onUpdateFilter={handleUpdateFilter}
+              onCopy={() => handleCopy(element)}
+              isSelected={element.id === selectedImageId}
+              onSelect={() => handleImageSelect(element.id)}
+              handlePaste={handlePaste}
+              onUpdateCrop={handleUpdateCrop}
+            />
+          ))}
+      </div>
     </div>
   );
 }

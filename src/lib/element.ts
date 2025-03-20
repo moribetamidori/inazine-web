@@ -174,22 +174,17 @@ export const handleImageResize = ({
 
 export async function handleDeleteElement(
   id: string,
-  pages: Page[],
-  currentPage: number,
-  setPages: (pages: Page[]) => void
+  currentPageData: Page | null,
+  setCurrentPageData: (page: Page) => void
 ) {
+  if (!currentPageData) return;
+
   try {
     await deleteElement(id);
-    setPages(
-      pages.map((page, idx) =>
-        idx === currentPage
-          ? {
-              ...page,
-              elements: page.elements.filter((el) => el.id !== id),
-            }
-          : page
-      )
-    );
+    setCurrentPageData({
+      ...currentPageData,
+      elements: currentPageData.elements.filter((el) => el.id !== id),
+    });
   } catch (error) {
     console.error("Error deleting element:", error);
   }
@@ -198,23 +193,19 @@ export async function handleDeleteElement(
 export async function handleUpdateContent(
   id: string,
   content: string,
-  pages: Page[],
-  currentPage: number,
-  setPages: (pages: Page[]) => void
+  currentPageData: Page | null,
+  setCurrentPageData: (page: Page) => void
 ) {
+  if (!currentPageData) return;
+
   try {
     await updateElement(id, { content });
-    const newPages = pages.map((page, idx) =>
-      idx === currentPage
-        ? {
-            ...page,
-            elements: page.elements.map((el) =>
-              el.id === id ? { ...el, content } : el
-            ),
-          }
-        : page
-    );
-    setPages(newPages);
+    setCurrentPageData({
+      ...currentPageData,
+      elements: currentPageData.elements.map((el) =>
+        el.id === id ? { ...el, content } : el
+      ),
+    });
   } catch (error) {
     console.error("Error updating element content:", error);
   }
@@ -224,23 +215,18 @@ export async function handleDragStop(
   id: string,
   x: number,
   y: number,
-  pages: Page[],
-  currentPage: number,
-  setPages: (pages: Page[]) => void
+  currentPageData: Page | null,
+  setCurrentPageData: (page: Page) => void
 ) {
+  if (!currentPageData) return;
+
   // Update local state first (optimistic update)
-  setPages(
-    pages.map((page, index) =>
-      index === currentPage
-        ? {
-            ...page,
-            elements: page.elements.map((el) =>
-              el.id === id ? { ...el, position_x: x, position_y: y } : el
-            ),
-          }
-        : page
-    )
-  );
+  setCurrentPageData({
+    ...currentPageData,
+    elements: currentPageData.elements.map((el) =>
+      el.id === id ? { ...el, position_x: x, position_y: y } : el
+    ),
+  });
 
   await updateElement(id, { position_x: x, position_y: y }).catch(() => {});
 }
@@ -251,31 +237,26 @@ export async function handleResize(
   height: number,
   x: number,
   y: number,
-  pages: Page[],
-  currentPage: number,
-  setPages: (pages: Page[]) => void
+  currentPageData: Page | null,
+  setCurrentPageData: (page: Page) => void
 ) {
+  if (!currentPageData) return;
+
   // Update local state first (optimistic update)
-  setPages(
-    pages.map((page, index) =>
-      index === currentPage
+  setCurrentPageData({
+    ...currentPageData,
+    elements: currentPageData.elements.map((el) =>
+      el.id === id
         ? {
-            ...page,
-            elements: page.elements.map((el) =>
-              el.id === id
-                ? {
-                    ...el,
-                    width,
-                    height,
-                    position_x: x,
-                    position_y: y,
-                  }
-                : el
-            ),
+            ...el,
+            width,
+            height,
+            position_x: x,
+            position_y: y,
           }
-        : page
-    )
-  );
+        : el
+    ),
+  });
 
   try {
     await updateElement(id, {
@@ -292,11 +273,12 @@ export async function handleResize(
 export async function handleMoveLayer(
   id: string,
   direction: "up" | "down",
-  pages: Page[],
-  currentPage: number,
-  setPages: (pages: Page[]) => void
+  currentPageData: Page | null,
+  setCurrentPageData: (page: Page) => void
 ) {
-  const currentElements = [...pages[currentPage].elements];
+  if (!currentPageData) return;
+
+  const currentElements = [...currentPageData.elements];
   const elementIndex = currentElements.findIndex((el) => el.id === id);
 
   if (
@@ -329,11 +311,10 @@ export async function handleMoveLayer(
 
   newElements.sort((a, b) => a.z_index - b.z_index);
 
-  setPages(
-    pages.map((page, index) =>
-      index === currentPage ? { ...page, elements: newElements } : page
-    )
-  );
+  setCurrentPageData({
+    ...currentPageData,
+    elements: newElements,
+  });
 
   try {
     await Promise.all([
@@ -359,11 +340,10 @@ export async function addText(
   pageId: string,
   width: number,
   height: number,
-  pages: Page[],
-  currentPage: number,
-  setPages: (pages: Page[]) => void
+  currentPageData: Page | null,
+  setCurrentPageData: (page: Page) => void
 ) {
-  if (!pageId) return;
+  if (!pageId || !currentPageData) return;
 
   try {
     const newElement = await createElement({
@@ -373,31 +353,25 @@ export async function addText(
       position_x: width / 2 - 50,
       position_y: height / 2 - 10,
       scale: 1,
-      z_index: pages[currentPage].elements.length + 1,
+      z_index: currentPageData.elements.length + 1,
       width: null,
       height: null,
       filter: "none",
       crop: null,
     });
 
-    setPages(
-      pages.map((page, index) =>
-        index === currentPage
-          ? {
-              ...page,
-              elements: [
-                ...page.elements,
-                {
-                  ...newElement,
-                  type: newElement.type as "text" | "image",
-                  filter: "none",
-                  crop: null,
-                },
-              ],
-            }
-          : page
-      )
-    );
+    setCurrentPageData({
+      ...currentPageData,
+      elements: [
+        ...currentPageData.elements,
+        {
+          ...newElement,
+          type: newElement.type as "text" | "image",
+          filter: "none",
+          crop: null,
+        },
+      ],
+    });
   } catch (error) {
     console.error("Error adding text element:", error);
   }
@@ -407,11 +381,10 @@ export async function addImage(
   pageId: string,
   width: number,
   height: number,
-  pages: Page[],
-  currentPage: number,
-  setPages: (pages: Page[]) => void
+  currentPageData: Page | null,
+  setCurrentPageData: (page: Page) => void
 ) {
-  if (!pageId) return;
+  if (!pageId || !currentPageData) return;
 
   return new Promise<void>((resolve) => {
     const input = document.createElement("input");
@@ -449,7 +422,6 @@ export async function addImage(
                   reader.onloadend = () => resolve(reader.result as string);
                   reader.readAsDataURL(pngBlob as Blob);
                 });
-
               } catch (heicError) {
                 console.error("Error converting HEIC image:", heicError);
                 // Continue with original format if conversion fails
@@ -475,49 +447,32 @@ export async function addImage(
             // Convert to WebP
             const webpData = canvas.toDataURL("image/webp", 0.8);
 
-            // Log size comparison
-            // const originalSize = Math.round(imgSrc.length / 1024);
-            // const webpSize = Math.round(webpData.length / 1024);
-            // console.log(`Original size: ${originalSize}KB`);
-            // console.log(`WebP size: ${webpSize}KB`);
-            // console.log(
-            //   `Size reduction: ${Math.round(
-            //     ((originalSize - webpSize) / originalSize) * 100
-            //   )}%`
-            // );
-
             const newElement = await createElement({
               page_id: pageId,
               type: "image",
               content: webpData,
-              position_x: width / 2 - 100,
-              position_y: height / 2 - 100,
+              position_x: width / 2 ,
+              position_y: height / 2 ,
               scale: 1,
-              z_index: pages[currentPage].elements.length + 1,
+              z_index: currentPageData.elements.length + 1,
               width: null,
               height: null,
               filter: "none",
               crop: null,
             });
 
-            setPages(
-              pages.map((page, index) =>
-                index === currentPage
-                  ? {
-                      ...page,
-                      elements: [
-                        ...page.elements,
-                        {
-                          ...newElement,
-                          type: newElement.type as "text" | "image",
-                          filter: "none",
-                          crop: null,
-                        },
-                      ],
-                    }
-                  : page
-              )
-            );
+            setCurrentPageData({
+              ...currentPageData,
+              elements: [
+                ...currentPageData.elements,
+                {
+                  ...newElement,
+                  type: newElement.type as "text" | "image",
+                  filter: "none",
+                  crop: null,
+                },
+              ],
+            });
             resolve();
           } catch (error) {
             console.error("Error adding image element:", error);
@@ -536,23 +491,20 @@ export async function addImage(
 export async function handleUpdateFilter(
   id: string,
   filter: string,
-  pages: Page[],
-  currentPage: number,
-  setPages: (pages: Page[]) => void
+  currentPageData: Page | null,
+  setCurrentPageData: (page: Page) => void
 ) {
+  if (!currentPageData) return;
+  console.log("id", id);
+  console.log("filter", filter);
+
   // Update local state first
-  setPages(
-    pages.map((page, index) =>
-      index === currentPage
-        ? {
-            ...page,
-            elements: page.elements.map((el) =>
-              el.id === id ? { ...el, filter } : el
-            ),
-          }
-        : page
-    )
-  );
+  setCurrentPageData({
+    ...currentPageData,
+    elements: currentPageData.elements.map((el) =>
+      el.id === id ? { ...el, filter } : el
+    ),
+  });
 
   // Update database
   try {
@@ -565,23 +517,18 @@ export async function handleUpdateFilter(
 export async function updateElementCrop(
   id: string,
   crop: { top: number; right: number; bottom: number; left: number },
-  pages: Page[],
-  currentPage: number,
-  setPages: (pages: Page[]) => void
+  currentPageData: Page | null,
+  setCurrentPageData: (page: Page) => void
 ) {
+  if (!currentPageData) return;
+
   // Update local state first
-  setPages(
-    pages.map((page, index) =>
-      index === currentPage
-        ? {
-            ...page,
-            elements: page.elements.map((el) =>
-              el.id === id ? { ...el, crop } : el
-            ),
-          }
-        : page
-    )
-  );
+  setCurrentPageData({
+    ...currentPageData,
+    elements: currentPageData.elements.map((el) =>
+      el.id === id ? { ...el, crop } : el
+    ),
+  });
 
   // Update database
   try {

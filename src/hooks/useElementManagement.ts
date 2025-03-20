@@ -13,48 +13,44 @@ import {
 } from "@/lib/element";
 
 interface UseElementManagementProps {
-  pages: Page[];
-  setPages: (pages: Page[]) => void;
-  currentPage: number;
+  currentPageData: Page | null;
+  setCurrentPageData: (page: Page) => void;
   width: number;
   height: number;
 }
 
 export function useElementManagement({
-  pages,
-  setPages,
-  currentPage,
+  currentPageData,
+  setCurrentPageData,
   width,
   height,
 }: UseElementManagementProps) {
   const [currentFilter, setCurrentFilter] = useState<string>("none");
 
   const addText = () => {
-    if (!pages[currentPage]?.id) return;
+    if (!currentPageData?.id) return;
     addTextElement(
-      pages[currentPage].id,
+      currentPageData.id,
       width,
       height,
-      pages,
-      currentPage,
-      setPages
+      currentPageData,
+      setCurrentPageData
     );
   };
 
   const addImage = () => {
-    if (!pages[currentPage]?.id) return;
+    if (!currentPageData?.id) return;
     addImageElement(
-      pages[currentPage].id,
+      currentPageData.id,
       width,
       height,
-      pages,
-      currentPage,
-      setPages
+      currentPageData,
+      setCurrentPageData
     );
   };
 
   const handleElementDragStop = async (id: string, x: number, y: number) => {
-    await dragStop(id, x, y, pages, currentPage, setPages);
+    await dragStop(id, x, y, currentPageData, setCurrentPageData);
   };
 
   const handleElementResize = async (
@@ -64,36 +60,37 @@ export function useElementManagement({
     x: number,
     y: number
   ) => {
-    await resize(id, width, height, x, y, pages, currentPage, setPages);
+    await resize(id, width, height, x, y, currentPageData, setCurrentPageData);
   };
 
   const handleElementMoveLayer = async (
     id: string,
     direction: "up" | "down"
   ) => {
-    await moveLayer(id, direction, pages, currentPage, setPages);
+    await moveLayer(id, direction, currentPageData, setCurrentPageData);
   };
 
   const handleDeleteElement = async (id: string) => {
-    await deleteElement(id, pages, currentPage, setPages);
+    await deleteElement(id, currentPageData, setCurrentPageData);
   };
 
   const handleUpdateContent = async (id: string, content: string) => {
-    await updateContent(id, content, pages, currentPage, setPages);
+    await updateContent(id, content, currentPageData, setCurrentPageData);
   };
 
   const handleUpdateFilter = async (id: string, filter: string) => {
-    await updateFilter(id, filter, pages, currentPage, setPages);
+    await updateFilter(id, filter, currentPageData, setCurrentPageData);
   };
 
   const handleUpdateCrop = async (
     id: string,
     crop: { top: number; right: number; bottom: number; left: number }
   ) => {
-    await updateCrop(id, crop, pages, currentPage, setPages);
+    await updateCrop(id, crop, currentPageData, setCurrentPageData);
   };
 
-  const handleFilterChange = (filter: string) => {
+  const handleFilterChange = (id: string, filter: string) => {
+    handleUpdateFilter(id, filter);
     setCurrentFilter(filter);
   };
 
