@@ -451,8 +451,8 @@ export async function addImage(
               page_id: pageId,
               type: "image",
               content: webpData,
-              position_x: width / 2 ,
-              position_y: height / 2 ,
+              position_x: width / 2,
+              position_y: height / 2,
               scale: 1,
               z_index: currentPageData.elements.length + 1,
               width: null,
@@ -495,9 +495,6 @@ export async function handleUpdateFilter(
   setCurrentPageData: (page: Page) => void
 ) {
   if (!currentPageData) return;
-  console.log("id", id);
-  console.log("filter", filter);
-
   // Update local state first
   setCurrentPageData({
     ...currentPageData,

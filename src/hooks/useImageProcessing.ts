@@ -93,7 +93,10 @@ export function useImageProcessing({
 
                 // After processing each image, update the progress
                 processedCount++;
-                setProcessingProgress({ current: processedCount, total: files.length });
+                setProcessingProgress({
+                  current: processedCount,
+                  total: files.length,
+                });
 
                 resolve(webpData);
               } catch (error) {

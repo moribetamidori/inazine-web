@@ -10,7 +10,7 @@ export default function ZineBook({ pages }: PreviewProps) {
   const flipbookRef = useRef<HTMLDivElement>(null);
   useFlipbook(flipbookRef);
   if (pages.length === 0) return null;
-  console.log("pages from zinebook", pages);
+  // console.log("pages from zinebook", pages);
 
   return (
     <div className="flex justify-center w-full">

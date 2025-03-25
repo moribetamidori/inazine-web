@@ -18,10 +18,10 @@ export function ImageDropZone({
 
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
-      const imageFiles = acceptedFiles.filter((file) => 
+      const imageFiles = acceptedFiles.filter((file) =>
         file.type.startsWith("image/")
       );
-      
+
       if (imageFiles.length > 0) {
         onImagesSelected(imageFiles);
       }
@@ -32,24 +32,26 @@ export function ImageDropZone({
   const { getRootProps, getInputProps } = useDropzone({
     onDrop,
     accept: {
-      'image/*': []
+      "image/*": [],
     },
     onDragEnter: () => setIsDragActive(true),
     onDragLeave: () => setIsDragActive(false),
-    disabled: isProcessing
+    disabled: isProcessing,
   });
 
   return (
     <div className="px-4 mt-2">
-      <h3 className="text-sm font-bold text-gray-900 mb-2">Auto Layout Images</h3>
+      <h3 className="text-sm font-bold text-gray-900 mb-2">
+        Auto Layout Images
+      </h3>
       <div
         {...getRootProps()}
         className={`border-2 border-dashed rounded-lg p-4 text-center transition-colors ${
-          isDragActive 
-            ? "border-black bg-gray-50" 
-            : isProcessing 
-              ? "border-gray-300 bg-gray-100 cursor-not-allowed" 
-              : "border-gray-300 hover:border-black hover:bg-gray-50"
+          isDragActive
+            ? "border-black bg-gray-50"
+            : isProcessing
+            ? "border-gray-300 bg-gray-100 cursor-not-allowed"
+            : "border-gray-300 hover:border-black hover:bg-gray-50"
         }`}
       >
         <input {...getInputProps()} />

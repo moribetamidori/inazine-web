@@ -51,8 +51,6 @@ export default function ZinePreview({
 
   useEffect(() => {
     if (isLoading && pages.length > 0 && !isGenerating) {
-      console.log("Generating preview");
-      console.log(isGenerating);
       generatePreview();
     }
   }, [isLoading, pages, isGenerating]);

@@ -37,7 +37,11 @@ export default function ExploreZinePage() {
   }, [params]);
 
   return (
-    <AuthenticatedLayout zineTitle={zine?.title} publicAccess={true}>
+    <AuthenticatedLayout
+      zineTitle={zine?.title}
+      zineId={params?.zid as string}
+      publicAccess={true}
+    >
       <div className="flex flex-col min-h-screen p-4 w-full">
         <div className="flex flex-col lg:flex-row lg:justify-center lg:w-9/12 mx-auto">
           <div className="w-full flex justify-center">

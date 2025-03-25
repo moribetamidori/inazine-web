@@ -44,7 +44,6 @@ export function useCopyPaste({
     };
 
     try {
-      console.log("Creating new element:", newElement); // Debug log
       const createdElement = await createElement({
         page_id: currentPageData.id,
         type: newElement.type,
@@ -93,7 +92,6 @@ export function useCopyPaste({
 
     // The actual implementation for pasting a full page would need to be handled
     // at a higher level component that has access to the page collection
-    console.log("Page paste requested - implement in parent component");
 
     // In this single-page model, we can only copy elements to the current page
     if (currentPageData) {

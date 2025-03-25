@@ -120,7 +120,6 @@ export const createLayoutForImages = async (
     }
   }
 
-  console.log("layoutType", layoutType);
   switch (layoutType) {
     case "singleFull": {
       // Single image that spans the entire canvas

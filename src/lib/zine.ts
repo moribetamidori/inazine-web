@@ -220,13 +220,13 @@ export async function generatePreview(
           const webpUrl = await convertToWebP(jpegUrl);
 
           // Calculate and log sizes
-          const jpegSize = calculateDataUrlSize(jpegUrl);
-          const webpSize = calculateDataUrlSize(webpUrl);
-          console.log(`Page ${i + 1} sizes:`, {
-            jpeg: `${(jpegSize / 1024).toFixed(2)} KB`,
-            webp: `${(webpSize / 1024).toFixed(2)} KB`,
-            reduction: `${((1 - webpSize / jpegSize) * 100).toFixed(1)}%`,
-          });
+          // const jpegSize = calculateDataUrlSize(jpegUrl);
+          // const webpSize = calculateDataUrlSize(webpUrl);
+          // console.log(`Page ${i + 1} sizes:`, {
+          //   jpeg: `${(jpegSize / 1024).toFixed(2)} KB`,
+          //   webp: `${(webpSize / 1024).toFixed(2)} KB`,
+          //   reduction: `${((1 - webpSize / jpegSize) * 100).toFixed(1)}%`,
+          // });
 
           pageImages.push(webpUrl);
 
@@ -271,10 +271,8 @@ function convertToWebP(jpegDataUrl: string): Promise<string> {
 }
 
 // Helper function to calculate size of data URL in bytes
-function calculateDataUrlSize(dataUrl: string): number {
-  const base64 = dataUrl.split(",")[1];
-  const padding = base64.length % 4 ? 4 - (base64.length % 4) : 0;
-  return (base64.length + padding) * 0.75;
-}
-
-
+// function calculateDataUrlSize(dataUrl: string): number {
+//   const base64 = dataUrl.split(",")[1];
+//   const padding = base64.length % 4 ? 4 - (base64.length % 4) : 0;
+//   return (base64.length + padding) * 0.75;
+// }
