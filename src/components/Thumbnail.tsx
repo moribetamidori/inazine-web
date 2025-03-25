@@ -255,7 +255,7 @@ export default function Thumbnail({
   return (
     <div
       ref={thumbnailContainerRef}
-      className="w-24 bg-gray-100 overflow-y-auto border-r border-gray-200 flex flex-col gap-2 p-2"
+      className="w-24 min-w-[80px] bg-gray-100 overflow-y-auto border-r border-gray-200 flex flex-col gap-2 p-2"
     >
       <DndContext
         sensors={sensors}
