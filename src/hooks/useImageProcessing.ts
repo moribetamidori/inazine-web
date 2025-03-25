@@ -27,15 +27,21 @@ export function useImageProcessing({
 }: UseImageProcessingProps) {
   const [isProcessingAutoLayout, setIsProcessingAutoLayout] = useState(false);
   const [isRemovingBackground, setIsRemovingBackground] = useState(false);
+  const [processingProgress, setProcessingProgress] = useState<{
+    current: number;
+    total: number;
+  } | null>(null);
 
   const handleAutoLayoutImages = async (files: File[]) => {
     const testCount = null;
     if (!zineId || files.length === 0) return;
 
     setIsProcessingAutoLayout(true);
+    setProcessingProgress({ current: 0, total: files.length });
 
     try {
       // Process all images first to get their data URLs
+      let processedCount = 0;
       const processedImages = await Promise.all(
         files.map(async (file) => {
           return new Promise<string>((resolve, reject) => {
@@ -84,6 +90,10 @@ export function useImageProcessing({
 
                 ctx.drawImage(img, 0, 0);
                 const webpData = canvas.toDataURL("image/webp", 0.8);
+
+                // After processing each image, update the progress
+                processedCount++;
+                setProcessingProgress({ current: processedCount, total: files.length });
 
                 resolve(webpData);
               } catch (error) {
@@ -243,6 +253,7 @@ export function useImageProcessing({
       return null;
     } finally {
       setIsProcessingAutoLayout(false);
+      setProcessingProgress(null);
     }
   };
 
@@ -339,5 +350,6 @@ export function useImageProcessing({
     isRemovingBackground,
     handleRemoveBackground,
     addSticker,
+    processingProgress,
   };
 }

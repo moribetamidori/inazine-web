@@ -18,6 +18,7 @@ interface PreviewManagerProps {
   isLoadingPrivacy?: boolean;
   onAutoLayoutImages: (files: File[]) => void;
   isProcessingAutoLayout: boolean;
+  processingProgress?: { current: number; total: number } | null;
   setBackgroundColor: (color: string) => void;
   currentBackgroundColor?: string;
   removeImageBackground?: () => Promise<void>;
@@ -45,6 +46,7 @@ export function PreviewManager({
   isLoadingPrivacy = false,
   onAutoLayoutImages,
   isProcessingAutoLayout,
+  processingProgress,
   setBackgroundColor,
   currentBackgroundColor,
   removeImageBackground,
@@ -79,6 +81,7 @@ export function PreviewManager({
         isLoadingPrivacy={isLoadingPrivacy}
         onAutoLayoutImages={onAutoLayoutImages}
         isProcessingAutoLayout={isProcessingAutoLayout}
+        processingProgress={processingProgress}
         setBackgroundColor={setBackgroundColor}
         currentBackgroundColor={currentBackgroundColor}
         removeImageBackground={removeImageBackground}

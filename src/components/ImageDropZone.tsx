@@ -6,9 +6,14 @@ import { ArrowUpTrayIcon } from "@heroicons/react/24/outline";
 interface ImageDropZoneProps {
   onImagesSelected: (files: File[]) => void;
   isProcessing: boolean;
+  progress?: { current: number; total: number } | null;
 }
 
-export function ImageDropZone({ onImagesSelected, isProcessing }: ImageDropZoneProps) {
+export function ImageDropZone({
+  onImagesSelected,
+  isProcessing,
+  progress = null,
+}: ImageDropZoneProps) {
   const [isDragActive, setIsDragActive] = useState(false);
 
   const onDrop = useCallback(
@@ -51,7 +56,13 @@ export function ImageDropZone({ onImagesSelected, isProcessing }: ImageDropZoneP
         {isProcessing ? (
           <div className="flex flex-col items-center justify-center py-2">
             <div className="animate-spin rounded-full h-6 w-6 border-2 border-black border-t-transparent mb-2" />
-            <p className="text-sm text-gray-600">Processing images...</p>
+            {progress ? (
+              <p className="text-sm text-gray-600">
+                Processing {progress.current} of {progress.total} images...
+              </p>
+            ) : (
+              <p className="text-sm text-gray-600">Processing images...</p>
+            )}
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-2">

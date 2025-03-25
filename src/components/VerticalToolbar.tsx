@@ -24,6 +24,7 @@ interface VerticalToolbarProps {
   isLoadingPrivacy?: boolean;
   onAutoLayoutImages: (files: File[]) => void;
   isProcessingAutoLayout: boolean;
+  processingProgress?: { current: number; total: number } | null;
   setBackgroundColor: (color: string) => void;
   currentBackgroundColor?: string;
   removeImageBackground?: () => Promise<void>;
@@ -119,6 +120,7 @@ export function VerticalToolbar({
   isLoadingPrivacy = false,
   onAutoLayoutImages,
   isProcessingAutoLayout,
+  processingProgress,
   setBackgroundColor,
   currentBackgroundColor,
   removeImageBackground,
@@ -248,6 +250,7 @@ export function VerticalToolbar({
       <ImageDropZone
         onImagesSelected={onAutoLayoutImages}
         isProcessing={isProcessingAutoLayout}
+        progress={processingProgress}
       />
 
       <div className="px-4 flex flex-col gap-2">

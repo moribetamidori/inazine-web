@@ -179,6 +179,7 @@ export default function ZineCanvas({
     isRemovingBackground,
     handleRemoveBackground,
     addSticker,
+    processingProgress,
   } = useImageProcessing({
     currentPageData: currentPage,
     setCurrentPageData: setCurrentPage,
@@ -270,6 +271,7 @@ export default function ZineCanvas({
             isLoadingPrivacy={isLoadingPrivacy}
             onAutoLayoutImages={handleAutoLayoutImages}
             isProcessingAutoLayout={isProcessingAutoLayout}
+            processingProgress={processingProgress}
             setBackgroundColor={handleSetBackgroundColor}
             currentBackgroundColor={currentBackgroundColor}
             removeImageBackground={handleRemoveBackground}
