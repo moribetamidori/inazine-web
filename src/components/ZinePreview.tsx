@@ -30,6 +30,10 @@ export default function ZinePreview({
   const [previewPages, setPreviewPages] = useState<string[]>([]);
   const pageRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [generatingProgress, setGeneratingProgress] = useState<{
+    current: number;
+    total: number;
+  } | null>(null);
 
   // Define dimensions for preview
   const width = 900;
@@ -45,26 +49,10 @@ export default function ZinePreview({
     return new Promise((resolve) => setTimeout(resolve, 50));
   }, []);
 
-  // Reset state when component mounts or zineId changes
-  useEffect(() => {
-    setIsGenerating(false);
-    setPreviewPages([]);
-    pageRefs.current = [];
-
-    // Generate preview if loading is set to true initially
-    if (isLoading && pages.length > 0) {
-      generatePreview();
-    }
-
-    // Cleanup function when component unmounts
-    return () => {
-      setIsGenerating(false);
-      setPreviewPages([]);
-    };
-  }, [zineId]);
-
   useEffect(() => {
     if (isLoading && pages.length > 0 && !isGenerating) {
+      console.log("Generating preview");
+      console.log(isGenerating);
       generatePreview();
     }
   }, [isLoading, pages, isGenerating]);
@@ -73,12 +61,15 @@ export default function ZinePreview({
     if (isGenerating) return;
     setIsGenerating(true);
     setIsLoading(true);
+    setGeneratingProgress({ current: 0, total: pages.length });
 
     try {
       // First clean up any active editors
+      console.time("cleanupActiveEditors");
       await cleanupActiveEditors();
+      console.timeEnd("cleanupActiveEditors");
 
-      // Load all page elements when preview is requested
+      console.time("loadAllPageElements");
       const loadAllPageElements = async () => {
         const loadPromises = pages.map((page) =>
           Promise.all(
@@ -99,12 +90,15 @@ export default function ZinePreview({
         await Promise.all(loadPromises);
       };
 
-      await loadAllPageElements();
+      console.timeEnd("loadAllPageElements");
 
-      // Store current page
+      console.time("loadAllPageElements");
+      await loadAllPageElements();
+      console.timeEnd("loadAllPageElements");
+
       const previousPage = currentPage;
 
-      // Temporarily show all pages
+      console.time("currentHiddenPages");
       const currentHiddenPages = pageRefs.current.map((ref) => {
         if (ref) {
           const wasHidden = ref.classList.contains("hidden");
@@ -113,23 +107,35 @@ export default function ZinePreview({
         }
         return false;
       });
-
+      console.timeEnd("currentHiddenPages");
       // Temporarily render all pages
       setCurrentPage(-1);
 
-      // Wait for render
+      console.time("setTimeout");
       await new Promise((resolve) => setTimeout(resolve, 100));
+      console.timeEnd("setTimeout");
 
+      console.time("filteredRefs");
       const filteredRefs = pageRefs.current.filter(
         (ref): ref is HTMLDivElement => ref !== null
       );
+      console.timeEnd("filteredRefs");
 
+      console.time("generateZinePreview");
       const images = await generateZinePreview(
         filteredRefs,
         width,
         height,
-        zineId ?? ""
+        zineId ?? "",
+        true,
+        (pageIndex) => {
+          setGeneratingProgress({
+            current: pageIndex + 1,
+            total: pages.length,
+          });
+        }
       );
+      console.timeEnd("generateZinePreview");
 
       // Restore hidden state and current page
       pageRefs.current.forEach((ref, index) => {
@@ -145,6 +151,7 @@ export default function ZinePreview({
     } finally {
       setIsLoading(false);
       setIsGenerating(false);
+      setGeneratingProgress(null);
     }
   };
 
@@ -156,7 +163,7 @@ export default function ZinePreview({
       orientation: "portrait",
       unit: "px",
       format: [width, height],
-      userUnit: 300,
+      compress: false, // Disable compression for better quality
     });
 
     try {
@@ -213,7 +220,11 @@ export default function ZinePreview({
           <div className="flex justify-center items-center h-40 bg-gray-100 rounded mb-4">
             <div className="flex items-center justify-center">
               <div className="animate-spin rounded-full h-8 w-8 border-4 border-gray-300 border-t-black"></div>
-              <span className="ml-3 text-lg">Loading preview...</span>
+              <span className="ml-3 text-lg">
+                {generatingProgress
+                  ? `Loading preview... (Page ${generatingProgress.current}/${generatingProgress.total})`
+                  : "Loading preview..."}
+              </span>
             </div>
           </div>
         )}

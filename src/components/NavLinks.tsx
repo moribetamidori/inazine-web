@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
+import { deleteZine } from "@/lib/zine";
 
 interface NavLinksProps {
   zineTitle?: string;
@@ -9,12 +10,20 @@ interface NavLinksProps {
 
 export default function NavLinks({ zineTitle, zineId }: NavLinksProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const { user } = useAuth();
 
   const isProfile = user && pathname?.includes(`/${user.id}/profile`);
   const isExplore = pathname?.includes("/explore");
   const isFeed = pathname === "/home";
   const isEdit = user && zineId && pathname?.includes(`/${user.id}/${zineId}`);
+
+  const handleDelete = async () => {
+    if (user && zineId) {
+      await deleteZine(zineId);
+      router.push(`/${user.id}/profile`);
+    }
+  };
 
   return (
     <div className="mb-8">
@@ -29,6 +38,7 @@ export default function NavLinks({ zineTitle, zineId }: NavLinksProps) {
               <span className="text-blue-500 hover:underline">Edit</span>
             </Link>
           )}
+          <button onClick={handleDelete}>Delete</button>
         </div>
       ) : (
         <nav className="flex gap-6 mb-6">

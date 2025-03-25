@@ -141,7 +141,8 @@ export async function generatePreview(
   width: number,
   height: number,
   zineId: string,
-  saveToDb: boolean = true
+  saveToDb: boolean = true,
+  onProgress?: (pageIndex: number) => void
 ): Promise<string[]> {
   const pageImages: string[] = [];
   const tempPages = document.createElement("div");
@@ -167,6 +168,11 @@ export async function generatePreview(
 
   try {
     for (let i = 0; i < pages.length; i++) {
+      // Report progress at the start of each page processing
+      if (onProgress) {
+        onProgress(i);
+      }
+
       const pageRef = pages[i];
       if (pageRef) {
         // Create temp container for each page with proper SVG context
@@ -270,3 +276,5 @@ function calculateDataUrlSize(dataUrl: string): number {
   const padding = base64.length % 4 ? 4 - (base64.length % 4) : 0;
   return (base64.length + padding) * 0.75;
 }
+
+
