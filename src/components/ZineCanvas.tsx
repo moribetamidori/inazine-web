@@ -86,6 +86,56 @@ export default function ZineCanvas({
     cleanupEditors: true,
   });
 
+  // Add this useEffect after the existing useEffect for fetching thumbnails
+  useEffect(() => {
+    const handlePagesCreated = async (
+      event: CustomEvent<{ pageIds: string[] }>
+    ) => {
+      // Fetch updated thumbnails
+      if (zine?.id) {
+        try {
+          const thumbnails = await fetchPageThumbnails(zine.id);
+          setThumbnailPages(
+            thumbnails.map((page) => ({
+              id: page.id,
+              page_order: page.page_order ?? 0,
+            }))
+          );
+
+          // Navigate to the last created page
+          if (event.detail.pageIds.length > 0) {
+            // Find the index of the last created page in the updated thumbnails
+            const lastPageId =
+              event.detail.pageIds[event.detail.pageIds.length - 1];
+            const lastPageIndex = thumbnails.findIndex(
+              (page) => page.id === lastPageId
+            );
+
+            if (lastPageIndex !== -1) {
+              safeSetCurrentPage(lastPageIndex);
+            }
+          }
+        } catch (err) {
+          console.error("Error updating thumbnails after page creation:", err);
+        }
+      }
+    };
+
+    // Add event listener
+    document.addEventListener(
+      "pagesCreated",
+      handlePagesCreated as unknown as EventListener
+    );
+
+    // Cleanup
+    return () => {
+      document.removeEventListener(
+        "pagesCreated",
+        handlePagesCreated as unknown as EventListener
+      );
+    };
+  }, [zine?.id, safeSetCurrentPage]);
+
   const {
     addText,
     addImage,
